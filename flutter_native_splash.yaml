@@ -1,0 +1,31 @@
+flutter_native_splash:
+  # The color of the splash screen background
+  color: "#1a1a1a"
+
+  # The image asset to use for the splash screen
+  image: assets/images/logo.png
+
+  # The branding image asset to use (optional)
+  # branding: assets/images/branding.png
+
+  # The positioning of the image
+  # android_gravity: center
+  # ios_content_mode: center
+
+  # Web specific configuration
+  web: true
+
+  # The following parameter allows you to provide alternate
+  # splash screen images for dark mode.
+  # dark_image: assets/images/splash-dark.png
+
+  # The following parameter completely 100% disables the Flutter
+  # "flutter native splash" screen
+  # fullscreen: true
+
+  # If you have changed the name(s) of your info.plist file(s),
+  # you can specify the filename(s) with the "info_plist_files"
+  # parameter.  Remove only the leading "#" characters:
+  # info_plist_files:
+  #   - 'ios/Runner/Info-Debug.plist'
+  #   - 'ios/Runner/Info-Release.plist'
