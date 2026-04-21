@@ -9,18 +9,21 @@ class OrdersScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        // leading: IconButton(
-        //   icon: Icon(Icons.arrow_back, color: primaryBrown),
-        //   onPressed: () => Navigator.pop(context),
-        // ),
+        scrolledUnderElevation: 0,
+        automaticallyImplyLeading: false,
         title: Text(
           'Settings',
-          style: TextStyle(color: primaryBrown, fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: colorScheme.onSurface,
+              ),
         ),
         actions: [
           Padding(
@@ -34,7 +37,7 @@ class OrdersScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionTitle('Profile Settings'),
+            //_buildSectionTitle('Profile Settings'),
             _buildProfileCard(),
             const SizedBox(height: 20),
 
@@ -56,7 +59,7 @@ class OrdersScreen extends StatelessWidget {
             _buildOrderCard(),
 
             const SizedBox(height: 16),
-            _buildLoadMoreButton(),
+            //_buildLoadMoreButton(),
           ],
         ),
       ),

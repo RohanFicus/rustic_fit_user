@@ -1,218 +1,290 @@
 import 'package:flutter/material.dart';
 
-class ScheduleScreen extends StatelessWidget {
+class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
 
   @override
+  State<ScheduleScreen> createState() => _ScheduleScreenState();
+}
+
+class _ScheduleScreenState extends State<ScheduleScreen> {
+  String _selectedCategory = "Suits";
+
+  final List<Map<String, dynamic>> _categories = [
+    {"name": "Suits", "icon": Icons.straighten_rounded},
+    {"name": "Lehenga", "icon": Icons.woman_rounded},
+    {"name": "Sarees", "icon": Icons.woman_rounded},
+    {"name": "Fabrics", "icon": Icons.texture_rounded},
+    {"name": "Simple", "icon": Icons.texture_rounded},
+  ];
+
+  final List<Map<String, dynamic>> _featuredStyles = [
+    {
+      "name": "ROYAL ANARKALI",
+      "rating": "5.0",
+      "image":
+          "https://images.unsplash.com/photo-1581044777550-4cfa60707c03?w=800",
+    },
+    {
+      "name": "BRIDAL GOLD",
+      "rating": "5.0",
+      "image":
+          "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800",
+    },
+    {
+      "name": "VELVET CHIC",
+      "rating": "5.0",
+      "image":
+          "https://images.unsplash.com/photo-1623609163859-ca93c959b98a?w=800",
+    },
+    {
+      "name": "SILK TRADITION",
+      "rating": "5.0",
+      "image":
+          "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800",
+    },
+  ];
+
+  @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Workout Schedule',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFD4AF37),
-                    fontFamily: 'Georgia',
-                  ),
-                ),
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5E6D3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.add,
-                    color: Color(0xFFD4AF37),
-                    size: 20,
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 30),
-            
-            // Week View
-            Container(
-              padding: const EdgeInsets.all(15.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 5,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildDayCard('Mon', '12', false),
-                  _buildDayCard('Tue', '13', false),
-                  _buildDayCard('Wed', '14', true),
-                  _buildDayCard('Thu', '15', false),
-                  _buildDayCard('Fri', '16', false),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Workout List
-            Expanded(
-              child: ListView(
-                children: [
-                  _workoutCard(
-                    'Full Body Workout',
-                    'Today, 8:00 AM',
-                    '45 min',
-                    Icons.accessibility,
-                    const Color(0xFFD4AF37),
-                  ),
-                  const SizedBox(height: 15),
-                  _workoutCard(
-                    'Cardio',
-                    'Tomorrow, 7:00 AM',
-                    '30 min',
-                    Icons.directions_run,
-                    Colors.grey[300]!,
-                  ),
-                  const SizedBox(height: 15),
-                  _workoutCard(
-                    'Yoga',
-                    'Friday, 6:00 PM',
-                    '60 min',
-                    Icons.self_improvement,
-                    const Color(0xFFD4AF37),
-                  ),
-                  const SizedBox(height: 15),
-                  _workoutCard(
-                    'Strength Training',
-                    'Saturday, 9:00 AM',
-                    '50 min',
-                    Icons.fitness_center,
-                    const Color(0xFFD4AF37),
-                  ),
-                ],
-              ),
-            ),
-          ],
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildTopBar(colorScheme),
+              const SizedBox(height: 16),
+              _buildSectionHeader("Category", null),
+              const SizedBox(height: 16),
+              _buildCategoryList(colorScheme),
+              const SizedBox(height: 16),
+              _buildSectionHeader("Best Destination", Icons.menu_rounded),
+              const SizedBox(height: 16),
+              _buildMasonryGrid(colorScheme),
+              const SizedBox(height: 100), // Space for navigation
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildDayCard(String day, String date, bool isActive) {
-    return Container(
-      padding: const EdgeInsets.all(10.0),
-      decoration: BoxDecoration(
-        color: isActive ? const Color(0xFFD4AF37) : const Color(0xFFF5E6D3),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        children: [
-          Text(
-            day,
-            style: TextStyle(
-              fontSize: 12,
-              color: isActive ? Colors.white : const Color(0xFFD4AF37),
-              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            date,
-            style: TextStyle(
-              fontSize: 16,
-              color: isActive ? Colors.white : const Color(0xFFD4AF37),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _workoutCard(String title, String time, String duration, IconData icon, Color iconColor) {
-    return Container(
-      padding: const EdgeInsets.all(15.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 5,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
+  Widget _buildTopBar(ColorScheme colorScheme) {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 45,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: iconColor,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              icon,
               color: Colors.white,
-              size: 25,
-            ),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFD4AF37),
-                  ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
                 ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.search_rounded,
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    size: 22),
+                const SizedBox(width: 12),
                 Text(
-                  time,
+                  "Looking for",
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 6,
-            ),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5E6D3),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Text(
-              duration,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFFD4AF37),
-                fontWeight: FontWeight.bold,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData? actionIcon) {
+    return Text(
+      title,
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.onSurface,
+        fontSize: 18,
+        fontWeight: FontWeight.w900,
+        letterSpacing: -0.5,
+      ),
+    );
+  }
+
+  Widget _buildCategoryList(ColorScheme colorScheme) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: _categories.map((cat) {
+        final isSelected = _selectedCategory == cat['name'];
+        return Column(
+          children: [
+            GestureDetector(
+              onTap: () => setState(() => _selectedCategory = cat['name']),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: isSelected ? colorScheme.primary : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isSelected
+                          ? colorScheme.primary.withValues(alpha: 0.3)
+                          : Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  cat['icon'],
+                  color: isSelected
+                      ? Colors.white
+                      : colorScheme.onSurface.withValues(alpha: 0.6),
+                  size: 28,
+                ),
               ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              cat['name'].toUpperCase(),
+              style: TextStyle(
+                color: isSelected
+                    ? colorScheme.onSurface
+                    : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildMasonryGrid(ColorScheme colorScheme) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            children: [
+              _buildStyleCard(_featuredStyles[0], 190, colorScheme),
+              const SizedBox(height: 16),
+              _buildStyleCard(_featuredStyles[2], 260, colorScheme),
+            ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            children: [
+              _buildStyleCard(_featuredStyles[1], 260, colorScheme),
+              const SizedBox(height: 16),
+              _buildStyleCard(_featuredStyles[3], 150, colorScheme),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStyleCard(
+      Map<String, dynamic> data, double height, ColorScheme colorScheme) {
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        image: DecorationImage(
+          image: NetworkImage(data['image']),
+          fit: BoxFit.cover,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.4),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 16,
+            bottom: 16,
+            right: 8,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    data['name'],
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(10),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        data['rating'],
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.star_border_rounded,
+                          color: Colors.white, size: 14),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ],

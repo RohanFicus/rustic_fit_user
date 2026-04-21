@@ -157,6 +157,20 @@ class Tailor {
 
 // Dummy Data
 class DummyData {
+  // Locations
+  static List<String> locations = [
+    'Faridabad, Haryana',
+    'Gurugram, Haryana',
+    'New Delhi, Delhi',
+    'Noida, Uttar Pradesh',
+    'Ghaziabad, Uttar Pradesh',
+    'Mumbai, Maharashtra',
+    'Pune, Maharashtra',
+    'Bangalore, Karnataka',
+    'Hyderabad, Telangana',
+    'Chennai, Tamil Nadu',
+  ];
+
   // Categories
   static List<Category> categories = [
     Category(
@@ -205,11 +219,11 @@ class DummyData {
           'Elegant Anarkali suit with intricate embroidery and perfect fit for special occasions.',
       category: 'Women',
       price: 499.0,
-      image: 'https://picsum.photos/seed/anarkali-suit/400/500.jpg',
+      image:
+          'https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?q=80&w=1364&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
       images: [
-        'https://picsum.photos/seed/anarkali-suit/400/500.jpg',
-        'https://picsum.photos/seed/anarkali-front/400/500.jpg',
-        'https://picsum.photos/seed/anarkali-detail/400/500.jpg',
+        'https://plus.unsplash.com/premium_photo-1673481601147-ee95199d3896?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+        'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
       ],
       sizes: ['M', 'L', 'XL', 'XXL'],
       fabric: 'Georgette with thread & sequins work',
@@ -226,11 +240,11 @@ class DummyData {
           'Traditional sherwani with modern design elements, perfect for weddings and formal events.',
       category: 'Men',
       price: 999.0,
-      image: 'https://picsum.photos/seed/sherwani-classic/400/500.jpg',
+      image:
+          'https://images.unsplash.com/photo-1612336307429-8a898d10e223?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
       images: [
-        'https://picsum.photos/seed/sherwani-classic/400/500.jpg',
-        'https://picsum.photos/seed/sherwani-closeup/400/500.jpg',
-        'https://picsum.photos/seed/sherwani-back/400/500.jpg',
+        'https://images.unsplash.com/photo-1612336307429-8a898d10e223?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+        'https://images.unsplash.com/photo-1496747611176-843222e1e57c?q=80&w=2073&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
       ],
       sizes: ['S', 'M', 'L', 'XL', 'XXL'],
       fabric: 'Silk blend with zari work',
@@ -247,11 +261,11 @@ class DummyData {
           'Beautiful lehenga choli for kids with comfortable fabric and attractive design.',
       category: 'Kids',
       price: 699.0,
-      image: 'https://picsum.photos/seed/kids-lehenga/400/500.jpg',
+      image:
+          'https://images.unsplash.com/photo-1542295669297-4d352b042bca?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
       images: [
-        'https://picsum.photos/seed/kids-lehenga/400/500.jpg',
-        'https://picsum.photos/seed/kids-lehenga-pink/400/500.jpg',
-        'https://picsum.photos/seed/kids-lehenga-detail/400/500.jpg',
+        'https://images.unsplash.com/photo-1605763240000-7e93b172d754?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+        'https://images.unsplash.com/photo-1605763240000-7e93b172d754?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
       ],
       sizes: ['2Y', '3Y', '4Y', '5Y', '6Y'],
       fabric: 'Cotton with printed patterns',

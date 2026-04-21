@@ -27,12 +27,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: primaryBrown),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false,
+        leading: null,
         title: Text(
-          'Settings',
+          'Profile',
           style: TextStyle(color: primaryBrown, fontWeight: FontWeight.bold),
         ),
         actions: [
