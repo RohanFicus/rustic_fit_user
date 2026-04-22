@@ -3,7 +3,6 @@ import 'package:rustic_fit/screens/location_selection_screen.dart';
 import 'package:rustic_fit/screens/product_detail_screen.dart';
 
 import '../models/dummy_data.dart';
-import '../services/data_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,9 +13,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final PageController _pageController = PageController();
+  final TextEditingController _searchController = TextEditingController();
   int _currentImageIndex = 0;
   String _selectedCategory = "All";
   String _currentLocation = "Faridabad, Haryana";
+  String _searchQuery = "";
 
   final List<String> _heroImages = [
     'https://plus.unsplash.com/premium_photo-1769290472496-62ffdb7003fb?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
@@ -34,9 +35,12 @@ class _HomeScreenState extends State<HomeScreen> {
     "Best Design"
   ];
 
+  List<Product> _filteredProducts = [];
+
   @override
   void initState() {
     super.initState();
+    _applyFilters();
     // Auto-scroll the image slider
     _startAutoScroll();
   }
@@ -44,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -71,6 +76,22 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _selectedCategory = category;
     });
+    _applyFilters();
+  }
+
+  void _applyFilters() {
+    setState(() {
+      _filteredProducts = DummyData.products.where((product) {
+        final matchesCategory = _selectedCategory == "All" ||
+            product.category.toLowerCase() == _selectedCategory.toLowerCase();
+        final matchesSearch =
+            product.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                product.description
+                    .toLowerCase()
+                    .contains(_searchQuery.toLowerCase());
+        return matchesCategory && matchesSearch;
+      }).toList();
+    });
   }
 
   @override
@@ -81,6 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             _buildHeader(),
+            //_buildSearchBar(),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
@@ -98,6 +120,66 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       //bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Container(
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF2D2926).withOpacity(0.05)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: TextField(
+          controller: _searchController,
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value;
+            });
+            _applyFilters();
+          },
+          style: const TextStyle(fontSize: 14, color: Color(0xFF2D2926)),
+          decoration: InputDecoration(
+            hintText: _selectedCategory == "All"
+                ? "Search luxury pieces..."
+                : "Search in $_selectedCategory...",
+            hintStyle: TextStyle(
+              color: const Color(0xFF2D2926).withOpacity(0.3),
+              fontSize: 14,
+            ),
+            prefixIcon: const Icon(Icons.search_rounded,
+                color: Color(0xFFC9A227), size: 20),
+            prefixIconConstraints: const BoxConstraints(minWidth: 32),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? GestureDetector(
+                    onTap: () {
+                      _searchController.clear();
+                      setState(() {
+                        _searchQuery = "";
+                      });
+                      _applyFilters();
+                    },
+                    child: Icon(Icons.cancel,
+                        color: const Color(0xFF2D2926).withOpacity(0.3),
+                        size: 18),
+                  )
+                : null,
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+      ),
     );
   }
 
@@ -441,20 +523,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 5. Product Grid with Category Filtering
   Widget _buildProductGrid(BuildContext context) {
-    final dataService = DataService();
-    List<Product> allProducts = dataService.getProducts();
-
-    // Filter products based on selected category
-    List<Product> filteredProducts = _selectedCategory == "All"
-        ? allProducts
-        : allProducts
-            .where((product) =>
-                product.category.toLowerCase() ==
-                _selectedCategory.toLowerCase())
-            .toList();
-
-    // Show more products (up to 8)
-    final productsToShow = filteredProducts.take(8).toList();
+    // Show up to 8 products initially or all if filtered
+    final productsToShow = _filteredProducts;
 
     return Column(
       children: [
@@ -466,65 +536,86 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                "${_selectedCategory} (${filteredProducts.length})",
+                "${_selectedCategory} (${_filteredProducts.length})",
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
               ),
-              GestureDetector(
-                onTap: () {},
-                child: Text(
-                  "See All",
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
+              if (_filteredProducts.length > 4)
+                GestureDetector(
+                  onTap: () {},
+                  child: Text(
+                    "See All",
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
 
         // Product Grid
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          padding: const EdgeInsets.all(16),
-          childAspectRatio: 0.75,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          children: productsToShow
-              .map((product) => _productCard(context, product))
-              .toList(),
-        ),
+        if (productsToShow.isNotEmpty)
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: productsToShow.length,
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.75,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+            ),
+            itemBuilder: (context, index) {
+              return _productCard(context, productsToShow[index]);
+            },
+          ),
 
         // Show message if no products found
         if (productsToShow.isEmpty)
           Padding(
-            padding: const EdgeInsets.all(32.0),
+            padding: const EdgeInsets.all(40.0),
             child: Column(
               children: [
-                Icon(
-                  Icons.shopping_bag_outlined,
-                  size: 64,
-                  color: Colors.grey[400],
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 20,
+                      )
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.shopping_bag_outlined,
+                    size: 48,
+                    color:
+                        Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                  ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 Text(
-                  "No products found in $_selectedCategory",
-                  style: TextStyle(
-                    color: Colors.grey[600],
+                  "No products in $_selectedCategory",
+                  style: const TextStyle(
+                    color: Color(0xFF2D2926),
                     fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Try selecting a different category",
+                  "Try another category for more options.",
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.grey[500],
-                    fontSize: 14,
+                    fontSize: 13,
                   ),
                 ),
               ],

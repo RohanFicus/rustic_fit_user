@@ -1,256 +1,387 @@
 import 'package:flutter/material.dart';
-import 'package:rustic_fit/screens/add_request_screen.dart';
+import 'package:rustic_fit/screens/fitting_details_screen.dart';
+
 import '../models/dummy_data.dart';
-import '../services/data_service.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final Product product;
 
   const ProductDetailScreen({super.key, required this.product});
 
-  final Color primaryBrown = const Color(0xFF5D4037);
-  final Color accentBrown = const Color(0xFFA67C52);
+  static const Color primaryGold = Color(0xFFC9A227);
+  static const Color lightCream = Color(0xFFF7F5F2);
+  static const Color darkBrown = Color(0xFF2D2926);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF5F1),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: primaryBrown, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.location_on, color: accentBrown, size: 18),
-            const SizedBox(width: 4),
-            Text("Faridabad, Haryana",
-                style: TextStyle(color: primaryBrown, fontSize: 16)),
-            Icon(Icons.keyboard_arrow_down, color: primaryBrown),
-          ],
-        ),
-        actions: [
-          IconButton(
-              onPressed: () {},
-              icon: Icon(Icons.notifications, color: primaryBrown)),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image Carousel Placeholder
-            _buildImageCarousel(),
-
-            Padding(
+      backgroundColor: lightCream,
+      body: CustomScrollView(
+        slivers: [
+          _buildSliverAppBar(context),
+          SliverToBoxAdapter(
+            child: Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(product.name,
-                          style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: primaryBrown)),
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              DataService().toggleFavorite(product.id);
-                            },
-                            child: Icon(
-                              product.isFavorite
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              color: product.isFavorite
-                                  ? Colors.red
-                                  : primaryBrown,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              product.category.toUpperCase(),
+                              style: const TextStyle(
+                                color: primaryGold,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
+                                fontSize: 11,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 15),
-                          Icon(Icons.share_outlined, color: primaryBrown),
-                        ],
-                      )
+                            const SizedBox(height: 2),
+                            Text(
+                              product.name,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.normal,
+                                color: darkBrown,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border:
+                              Border.all(color: darkBrown.withOpacity(0.05)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.02),
+                              blurRadius: 10,
+                            )
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.star,
+                                color: primaryGold, size: 16),
+                            const SizedBox(width: 4),
+                            Text(
+                              product.rating.toString(),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: darkBrown,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(DummyData.formatPrice(product.price),
-                      style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: primaryBrown)),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Icon(Icons.local_shipping_outlined,
-                          color: Colors.green[700], size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                          product.isReadyToShip
-                              ? "Ready to ship"
-                              : "Made to order",
-                          style: TextStyle(
-                              color: Colors.green[700],
-                              fontWeight: FontWeight.bold)),
-                      Text("Delivery in ${product.deliveryDays} days"),
-                    ],
+                  const SizedBox(height: 5),
+                  Text(
+                    DummyData.formatPrice(product.price),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: darkBrown,
+                    ),
                   ),
-                  const Divider(height: 40),
-                  Text("Design Details",
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: primaryBrown)),
+                  const SizedBox(height: 5),
+                  const Text(
+                    "Description",
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: darkBrown,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    product.description,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: darkBrown.withOpacity(0.6),
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _buildSpecGrid(),
+                  const SizedBox(height: 14),
+                  const Text(
+                    "Service Highlights",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: darkBrown,
+                    ),
+                  ),
                   const SizedBox(height: 12),
-                  _buildDetailItem("Fabric: ${product.fabric}"),
-                  _buildDetailItem("Color: ${product.color}"),
-                  _buildDetailItem("Sizes: ${product.sizes.join(', ')}"),
-                  _buildDetailItem(
-                      "Rating: ${product.rating} (${product.reviewCount} reviews)"),
-                  const Divider(height: 40),
-                  Text("More Designs",
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: primaryBrown)),
-                  const SizedBox(height: 12),
-                  _buildMoreDesigns(),
-                  const SizedBox(height: 100), // Space for bottom button
+                  _buildHighlightItem(
+                    Icons.straighten_outlined,
+                    "Home Measurement",
+                    "Professional tailor visits your home for perfect sizing.",
+                  ),
+                  _buildHighlightItem(
+                    Icons.auto_awesome_outlined,
+                    "Custom Stitching",
+                    "Hand-crafted by master artisans with premium finish.",
+                  ),
+                  _buildHighlightItem(
+                    Icons.local_shipping_outlined,
+                    "Speedy Delivery",
+                    "Delivered to your doorstep in ${product.deliveryDays} days.",
+                  ),
+                  const SizedBox(height: 100),
                 ],
               ),
-            )
-          ],
+            ),
+          ),
+        ],
+      ),
+      bottomSheet: _buildBottomAction(context),
+    );
+  }
+
+  Widget _buildSliverAppBar(BuildContext context) {
+    return SliverAppBar(
+      expandedHeight: 450,
+      pinned: true,
+      backgroundColor: lightCream,
+      leading: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: CircleAvatar(
+          backgroundColor: Colors.white.withOpacity(0.9),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: darkBrown, size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
         ),
       ),
-      bottomSheet: _buildBottomButton(
-          "Add to Request", Icons.calendar_today_outlined, () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => AddRequestScreen(product: product),
-          ),
-        );
-        // Navigate to AddRequestScreen
-      }),
-    );
-  }
-
-  Widget _buildImageCarousel() {
-    return SizedBox(
-      height: 300,
-      child: Stack(
-        alignment: Alignment.bottomCenter,
-        children: [
-          PageView(
-            children: product.images
-                .map((imageUrl) => Image.network(imageUrl, fit: BoxFit.cover))
-                .toList(),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                  product.images.length,
-                  (index) => Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        width: index == 0 ? 12 : 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: index == 0 ? primaryBrown : Colors.grey[400],
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      )),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: CircleAvatar(
+            backgroundColor: Colors.white.withOpacity(0.9),
+            child: IconButton(
+              icon: Icon(
+                product.isFavorite ? Icons.favorite : Icons.favorite_border,
+                color: product.isFavorite ? Colors.red : darkBrown,
+                size: 20,
+              ),
+              onPressed: () {},
             ),
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailItem(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        children: [
-          Icon(Icons.check, color: primaryBrown, size: 18),
-          const SizedBox(width: 10),
-          Text(text, style: TextStyle(color: Colors.grey[800])),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMoreDesigns() {
-    final dataService = DataService();
-    final relatedProducts = dataService
-        .getProductsByCategory(product.category)
-        .where((p) => p.id != product.id)
-        .take(4)
-        .toList();
-
-    return SizedBox(
-      height: 120,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: relatedProducts.length,
-        itemBuilder: (context, index) {
-          final relatedProduct = relatedProducts[index];
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      ProductDetailScreen(product: relatedProduct),
-                ),
-              );
-            },
-            child: Container(
-              width: 90,
-              margin: const EdgeInsets.only(right: 12),
+          ),
+        ),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.network(product.image, fit: BoxFit.cover),
+            Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                image: DecorationImage(
-                  image: NetworkImage(relatedProduct.image),
-                  fit: BoxFit.cover,
+                //verticalDirection: VerticalDirection.down,
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.2),
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.1),
+                  ],
                 ),
               ),
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildBottomButton(
-      String label, IconData icon, VoidCallback onPressed) {
+  Widget _buildSpecGrid() {
     return Container(
-      padding: const EdgeInsets.all(20),
-      color: const Color(0xFFFAF5F1),
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: accentBrown,
-          minimumSize: const Size(double.infinity, 55),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: darkBrown.withOpacity(0.05)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _buildSpecItem("Fabric", product.fabric)),
+          _buildVerticalDivider(),
+          Expanded(child: _buildSpecItem("Color", product.color)),
+          _buildVerticalDivider(),
+          Expanded(
+              child: _buildSpecItem(
+                  "Type", product.isReadyToShip ? "Ready" : "Bespoke")),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSpecItem(String label, String value) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: darkBrown.withOpacity(0.4),
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white),
-            const SizedBox(width: 10),
-            Text(label,
-                style: const TextStyle(fontSize: 18, color: Colors.white)),
-          ],
+        const SizedBox(height: 2),
+        Text(
+          value,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: darkBrown,
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+          ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildVerticalDivider() {
+    return Container(
+      height: 30,
+      width: 1,
+      color: Colors.black.withOpacity(0.1),
+    );
+  }
+
+  Widget _buildHighlightItem(IconData icon, String title, String subtitle) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: primaryGold.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: primaryGold, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: darkBrown,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: darkBrown.withOpacity(0.5),
+                    fontSize: 12,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomAction(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: darkBrown.withOpacity(0.05))),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Estimated Total",
+                  style: TextStyle(
+                      color: darkBrown.withOpacity(0.4), fontSize: 11),
+                ),
+                Text(
+                  DummyData.formatPrice(product.price),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: darkBrown,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            flex: 2,
+            child: FilledButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        FittingDetailsScreen(product: product),
+                  ),
+                );
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: primaryGold,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                "Customize & Book",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

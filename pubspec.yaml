@@ -41,6 +41,10 @@ dependencies:
   # Country picker and icons
   country_picker: ^2.0.26
   font_awesome_flutter: ^10.7.0
+  http: ^1.1.0
+  image_picker: ^1.0.7
+  geolocator: ^11.0.0
+  geocoding: ^3.0.0
 
 dev_dependencies:
   flutter_test:

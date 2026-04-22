@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rustic_fit/my_orders_screen.dart';
-import 'package:rustic_fit/screens/orders_screen.dart';
+import 'package:rustic_fit/screens/profile_screen.dart';
 
 import '../widgets/custom_bottom_nav.dart';
 import 'home_screen.dart';
@@ -20,8 +20,7 @@ class _MainContainerState extends State<MainContainer> {
     const HomeScreen(),
     const ScheduleScreen(),
     const MyOrdersScreen(),
-    const OrdersScreen(),
-    //const SettingsScreen(),
+    const ProfileScreen(),
   ];
 
   void _onTabTapped(int index) {
