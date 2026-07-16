@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/supabase_service.dart';
+import 'mobile_auth_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -8,667 +10,334 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final Color primaryBrown = const Color(0xFF5D4037);
-  final Color accentBrown = const Color(0xFFA67C52);
-  final Color lightBg = const Color(0xFFFAF5F1);
-
-  // User data state
-  String _userName = 'Kim Sharma';
-  String _userEmail = 'kim.sharma@example.com';
-  String _userPhone = '+91 9876543210';
-  String _userAvatar = 'https://picsum.photos/seed/kim-sharma/200/200.jpg';
+  static const Color primaryGold = Color(0xFFC9A227);
+  static const Color lightCream = Color(0xFFFDFCFB);
+  static const Color darkBrown = Color(0xFF131517);
 
   // Settings state
-  bool _notificationsEnabled = true;
+  bool _pushNotifications = true;
   bool _emailNotifications = true;
-  bool _pushNotifications = false;
   bool _locationServices = true;
   String _selectedLanguage = 'English';
   String _selectedCurrency = 'INR (₹)';
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isWide = size.width > 900;
+
     return Scaffold(
-      backgroundColor: lightBg,
+      backgroundColor: lightCream,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false,
         automaticallyImplyLeading: false,
-        leading: null,
-        title: Text(
+        title: const Text(
           'Settings',
           style: TextStyle(
-            color: primaryBrown,
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-          ),
+              color: darkBrown, fontWeight: FontWeight.w900, fontSize: 22),
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.save, color: primaryBrown),
-            onPressed: () => _saveSettings(),
+            icon: const Icon(Icons.check_circle_outline_rounded,
+                color: primaryGold, size: 24),
+            onPressed: () {},
           ),
+          const SizedBox(width: 16),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildProfileSection(),
-            const SizedBox(height: 24),
-            _buildPreferencesSection(),
-            const SizedBox(height: 24),
-            _buildAccountSection(),
-            const SizedBox(height: 24),
-            _buildMoreSection(),
-            const SizedBox(height: 20),
-          ],
-        ),
+      body: isWide ? _buildWideLayout() : _buildMobileLayout(),
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader("Notifications"),
+          const SizedBox(height: 16),
+          _buildSettingsCard([
+            _buildSwitchItem(
+                "Push Notifications",
+                "Alerts for orders & updates",
+                _pushNotifications,
+                (v) => setState(() => _pushNotifications = v)),
+            _buildSwitchItem(
+                "Email Notifications",
+                "Weekly style reports & bills",
+                _emailNotifications,
+                (v) => setState(() => _emailNotifications = v)),
+          ]),
+          const SizedBox(height: 32),
+          _buildSectionHeader("Regional Preferences"),
+          const SizedBox(height: 16),
+          _buildSettingsCard([
+            _buildSelectorItem(
+                "Language", _selectedLanguage, Icons.translate_rounded),
+            _buildSelectorItem(
+                "Currency", _selectedCurrency, Icons.payments_rounded),
+          ]),
+          const SizedBox(height: 32),
+          _buildSectionHeader("Privacy & Security"),
+          const SizedBox(height: 16),
+          _buildSettingsCard([
+            _buildSwitchItem(
+                "Location Services",
+                "Find tailors near you",
+                _locationServices,
+                (v) => setState(() => _locationServices = v)),
+            _buildActionItem("Change Password", Icons.lock_outline_rounded),
+            _buildActionItem("Two-Factor Auth", Icons.security_rounded),
+          ]),
+          const SizedBox(height: 32),
+          _buildSectionHeader("Support"),
+          const SizedBox(height: 16),
+          _buildSettingsCard([
+            _buildActionItem("Help Center", Icons.help_outline_rounded),
+            _buildActionItem(
+                "Contact Master Tailor", Icons.support_agent_rounded),
+            _buildActionItem("Privacy Policy", Icons.description_outlined),
+          ]),
+          const SizedBox(height: 40),
+          _buildLogoutButton(),
+          const SizedBox(height: 40),
+        ],
       ),
     );
   }
 
-  Widget _buildProfileSection() {
-    return GestureDetector(
-      onTap: () => _editProfile(),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Row(
+  Widget _buildWideLayout() {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(40),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundImage: NetworkImage(_userAvatar),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _userName,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: primaryBrown,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _userPhone,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _userEmail,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.edit,
-                  color: accentBrown,
-                  size: 24,
-                ),
+                _buildSectionHeader("Communication"),
+                const SizedBox(height: 16),
+                _buildSettingsCard([
+                  _buildSwitchItem(
+                      "Push Notifications",
+                      "Alerts for orders & updates",
+                      _pushNotifications,
+                      (v) => setState(() => _pushNotifications = v)),
+                  _buildSwitchItem(
+                      "Email Notifications",
+                      "Weekly style reports & bills",
+                      _emailNotifications,
+                      (v) => setState(() => _emailNotifications = v)),
+                  _buildSwitchItem(
+                      "Location Services",
+                      "Find tailors near you",
+                      _locationServices,
+                      (v) => setState(() => _locationServices = v)),
+                ]),
+                const SizedBox(height: 32),
+                _buildSectionHeader("Regional"),
+                const SizedBox(height: 16),
+                _buildSettingsCard([
+                  _buildSelectorItem(
+                      "Language", _selectedLanguage, Icons.translate_rounded),
+                  _buildSelectorItem(
+                      "Currency", _selectedCurrency, Icons.payments_rounded),
+                ]),
               ],
             ),
-            const SizedBox(height: 16),
-            Row(
+          ),
+          const SizedBox(width: 40),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.location_on, color: primaryBrown, size: 16),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Manage Delivery Addresses',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: primaryBrown,
-                    ),
-                  ),
-                ),
-                Icon(Icons.chevron_right, color: Colors.grey[400], size: 20),
+                _buildSectionHeader("Security"),
+                const SizedBox(height: 16),
+                _buildSettingsCard([
+                  _buildActionItem(
+                      "Change Password", Icons.lock_outline_rounded),
+                  _buildActionItem(
+                      "Two-Factor Authentication", Icons.security_rounded),
+                  _buildActionItem("Session Management", Icons.devices_rounded),
+                ]),
+                const SizedBox(height: 32),
+                _buildSectionHeader("RusticFit Support"),
+                const SizedBox(height: 16),
+                _buildSettingsCard([
+                  _buildActionItem("Help Center", Icons.help_outline_rounded),
+                  _buildActionItem(
+                      "Contact Master Tailor", Icons.support_agent_rounded),
+                  _buildActionItem(
+                      "Terms of Service", Icons.description_outlined),
+                  _buildActionItem(
+                      "Privacy Policy", Icons.privacy_tip_outlined),
+                ]),
+                const SizedBox(height: 40),
+                _buildLogoutButton(),
               ],
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        title.toUpperCase(),
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+          color: primaryGold,
+          letterSpacing: 1.5,
         ),
       ),
     );
   }
 
-  Widget _buildPreferencesSection() {
+  Widget _buildSettingsCard(List<Widget> children) {
     return Container(
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE9ECEF)),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Preferences',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: primaryBrown,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildPreferenceItem(
-            Icons.notifications,
-            'Push Notifications',
-            _pushNotifications,
-            (value) => setState(() => _pushNotifications = value),
-            activeIcon: Icons.notifications_active,
-          ),
-          _buildPreferenceItem(
-            Icons.email,
-            'Email Notifications',
-            _emailNotifications,
-            (value) => setState(() => _emailNotifications = value),
-            activeIcon: Icons.mark_email_read,
-          ),
-          _buildPreferenceItem(
-            Icons.location_on,
-            'Location Services',
-            _locationServices,
-            (value) => setState(() => _locationServices = value),
-            activeIcon: Icons.location_on,
-          ),
-          const SizedBox(height: 16),
-          _buildLanguageSelector(),
-          _buildCurrencySelector(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPreferenceItem(
-      IconData icon, String title, bool value, Function(bool) onChanged,
-      {required IconData activeIcon}) {
-    return GestureDetector(
-      onTap: () => onChanged(!value),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: value
-              ? accentBrown.withOpacity(0.1)
-              : Colors.grey.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: value
-                ? accentBrown.withOpacity(0.3)
-                : Colors.grey.withOpacity(0.2),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              value ? (activeIcon ?? icon) : icon,
-              color: value ? accentBrown : Colors.grey[600],
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: value ? accentBrown : Colors.grey[700],
-                ),
-              ),
-            ),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-              activeColor: accentBrown,
-              activeTrackColor: accentBrown.withOpacity(0.3),
-              inactiveThumbColor: Colors.grey[400],
-              inactiveTrackColor: Colors.grey[300],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLanguageSelector() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Language',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: primaryBrown,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
+        children: List.generate(children.length, (index) {
+          if (index == children.length - 1) return children[index];
+          return Column(
             children: [
-              Expanded(
-                child: _buildLanguageOption(
-                    'English', 'English', _selectedLanguage == 'English'),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildLanguageOption(
-                    'हिंदी', 'Hindi', _selectedLanguage == 'हिंदी'),
+              children[index],
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Divider(height: 1, color: Color(0xFFF1F3F5)),
               ),
             ],
-          ),
-        ],
+          );
+        }),
       ),
     );
   }
 
-  Widget _buildLanguageOption(String flag, String language, bool isSelected) {
-    return GestureDetector(
-      onTap: () => setState(() => _selectedLanguage = language),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? accentBrown.withOpacity(0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected ? accentBrown : Colors.grey.withOpacity(0.3),
-          ),
-        ),
-        child: Row(
-          children: [
-            Text(
-              flag,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              language,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? accentBrown : Colors.grey[700],
-              ),
-            ),
-          ],
-        ),
+  Widget _buildSwitchItem(
+      String title, String subtitle, bool value, Function(bool) onChanged) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      title: Text(title,
+          style: const TextStyle(
+              fontWeight: FontWeight.w800, fontSize: 15, color: darkBrown)),
+      subtitle: Text(subtitle,
+          style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+      trailing: Switch.adaptive(
+        value: value,
+        onChanged: onChanged,
+        activeColor: primaryGold,
+        activeTrackColor: primaryGold.withValues(alpha: 0.3),
       ),
     );
   }
 
-  Widget _buildCurrencySelector() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildSelectorItem(String title, String value, IconData icon) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      leading: Icon(icon, color: primaryGold, size: 20),
+      title: Text(title,
+          style: const TextStyle(
+              fontWeight: FontWeight.w800, fontSize: 15, color: darkBrown)),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'Currency',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: primaryBrown,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _buildCurrencyOption(
-                    'INR (₹)', 'Indian Rupee', _selectedCurrency == 'INR (₹)'),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildCurrencyOption(
-                    'USD (\$)', 'US Dollar', _selectedCurrency == 'USD (\$)'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCurrencyOption(String currency, String name, bool isSelected) {
-    return GestureDetector(
-      onTap: () => setState(() => _selectedCurrency = currency),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? accentBrown.withOpacity(0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected ? accentBrown : Colors.grey.withOpacity(0.3),
-          ),
-        ),
-        child: Row(
-          children: [
-            Text(
-              currency,
+          Text(value,
               style: TextStyle(
-                fontSize: 20,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                name,
-                style: TextStyle(
-                  fontSize: 14,
+                  color: Colors.grey[600],
                   fontWeight: FontWeight.w600,
-                  color: isSelected ? accentBrown : Colors.grey[700],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAccountSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
+                  fontSize: 14)),
+          const SizedBox(width: 8),
+          const Icon(Icons.chevron_right_rounded,
+              color: Color(0xFFE9ECEF), size: 20),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Account',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: primaryBrown,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildAccountItem(
-            Icons.lock_outline,
-            'Change Password',
-            () => _changePassword(),
-          ),
-          _buildAccountItem(
-            Icons.privacy_tip,
-            'Privacy Policy',
-            () => _openPrivacyPolicy(),
-          ),
-          _buildAccountItem(
-            Icons.description,
-            'Terms of Service',
-            () => _openTermsOfService(),
-          ),
-          _buildAccountItem(
-            Icons.logout,
-            'Sign Out',
-            () => _signOut(),
-            isDestructive: true,
-          ),
-        ],
-      ),
+      onTap: () {},
     );
   }
 
-  Widget _buildAccountItem(
-    IconData icon,
-    String title,
-    VoidCallback onTap, {
-    bool isDestructive = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color:
-              isDestructive ? Colors.red.withOpacity(0.05) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isDestructive
-                ? Colors.red.withOpacity(0.2)
-                : Colors.grey.withOpacity(0.2),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isDestructive ? Colors.red[600] : primaryBrown,
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: isDestructive ? Colors.red[600] : primaryBrown,
-                ),
-              ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              color: isDestructive ? Colors.red[400] : Colors.grey[400],
-              size: 20,
-            ),
-          ],
-        ),
-      ),
+  Widget _buildActionItem(String title, IconData icon) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      leading: Icon(icon, color: darkBrown, size: 20),
+      title: Text(title,
+          style: const TextStyle(
+              fontWeight: FontWeight.w800, fontSize: 15, color: darkBrown)),
+      trailing: const Icon(Icons.chevron_right_rounded,
+          color: Color(0xFFE9ECEF), size: 20),
+      onTap: () {},
     );
   }
 
-  Widget _buildMoreSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'More',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: primaryBrown,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildAccountItem(
-            Icons.star_border,
-            'Rate Our App',
-            () => _rateApp(),
-          ),
-          _buildAccountItem(
-            Icons.share,
-            'Share App',
-            () => _shareApp(),
-          ),
-          _buildAccountItem(
-            Icons.info_outline,
-            'About',
-            () => _aboutApp(),
-          ),
-          _buildAccountItem(
-            Icons.help_outline,
-            'Help & Support',
-            () => _helpSupport(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Action Methods
-  void _editProfile() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening profile editor...'),
-        backgroundColor: accentBrown,
-      ),
-    );
-  }
-
-  void _saveSettings() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Settings saved successfully!'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  void _changePassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening change password...'),
-        backgroundColor: accentBrown,
-      ),
-    );
-  }
-
-  void _openPrivacyPolicy() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening privacy policy...'),
-        backgroundColor: accentBrown,
-      ),
-    );
-  }
-
-  void _openTermsOfService() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening terms of service...'),
-        backgroundColor: accentBrown,
-      ),
-    );
-  }
-
-  void _signOut() {
+  void _logout() async {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Sign Out'),
-        content: Text('Are you sure you want to sign out?'),
+        title: const Text('Sign Out'),
+        content: const Text('Are you sure you want to sign out of your account?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Signed out successfully'),
-                  backgroundColor: Colors.green,
-                ),
-              );
+              await SupabaseService.clearSession();
+              if (mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MobileAuthScreen()),
+                  (route) => false,
+                );
+              }
             },
-            child: Text('Sign Out'),
+            child: const Text('Sign Out', style: TextStyle(color: Colors.redAccent)),
           ),
         ],
       ),
     );
   }
 
-  void _rateApp() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening app store to rate...'),
-        backgroundColor: accentBrown,
-      ),
-    );
-  }
-
-  void _shareApp() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Sharing app...'),
-        backgroundColor: accentBrown,
-      ),
-    );
-  }
-
-  void _aboutApp() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening about screen...'),
-        backgroundColor: accentBrown,
-      ),
-    );
-  }
-
-  void _helpSupport() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening help & support...'),
-        backgroundColor: accentBrown,
+  Widget _buildLogoutButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton(
+        onPressed: _logout,
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Colors.redAccent, width: 1.5),
+          ),
+        ),
+        child: const Text(
+          "Sign Out Account",
+          style: TextStyle(
+              color: Colors.redAccent,
+              fontWeight: FontWeight.w900,
+              fontSize: 15),
+        ),
       ),
     );
   }

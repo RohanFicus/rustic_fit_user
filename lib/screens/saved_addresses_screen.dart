@@ -1,11 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/dummy_data.dart';
+import '../services/data_service.dart';
 
 class SavedAddressesScreen extends StatefulWidget {
   const SavedAddressesScreen({super.key});
@@ -16,132 +15,229 @@ class SavedAddressesScreen extends StatefulWidget {
 
 class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
   static const Color primaryGold = Color(0xFFC9A227);
-  static const Color lightCream = Color(0xFFF7F5F2);
-  static const Color darkBrown = Color(0xFF2D2926);
-  static const Color submitNavy = Color(0xFF1E3A8A);
+  static const Color lightCream = Color(0xFFFDFCFB);
+  static const Color darkBrown = Color(0xFF131517);
 
   void _deleteAddress(int index) {
     setState(() {
-      DummyData.currentUser.savedAddresses.removeAt(index);
+      final address = DummyData.currentUser.savedAddresses[index];
+      DataService().removeSavedAddress(address);
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Address removed'),
+        content: const Text('Address removed from profile'),
         backgroundColor: darkBrown,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }
 
-  void _addNewAddress() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const AddAddressBottomSheet(),
-    ).then((value) {
-      if (value != null && value is String) {
-        setState(() {
-          DummyData.currentUser.savedAddresses.add(value);
-        });
-      }
-    });
+  void _addNewAddress(bool isWide) {
+    if (isWide) {
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: const AddAddressForm(isDialog: true),
+          ),
+        ),
+      ).then((value) {
+        if (value != null && value is String) {
+          setState(() {
+            DataService().addSavedAddress(value);
+          });
+        }
+      });
+    } else {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => const AddAddressForm(isDialog: false),
+      ).then((value) {
+        if (value != null && value is String) {
+          setState(() {
+            DataService().addSavedAddress(value);
+          });
+        }
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isWide = size.width > 900;
+
     return Scaffold(
       backgroundColor: lightCream,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: darkBrown),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: darkBrown, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          "Saved Addresses",
-          style: TextStyle(color: darkBrown, fontWeight: FontWeight.bold),
+          "My Saved Locations",
+          style: TextStyle(
+              color: darkBrown, fontWeight: FontWeight.w900, fontSize: 18),
         ),
       ),
       body: DummyData.currentUser.savedAddresses.isEmpty
           ? _buildEmptyState()
-          : ListView.builder(
-              padding: const EdgeInsets.all(24),
-              itemCount: DummyData.currentUser.savedAddresses.length,
-              itemBuilder: (context, index) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: darkBrown.withOpacity(0.05)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          : SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: EdgeInsets.all(isWide ? 48 : 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: primaryGold.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(10),
+                      _buildSectionTitle("Primary Addresses"),
+                      if (isWide)
+                        ElevatedButton.icon(
+                          onPressed: () => _addNewAddress(true),
+                          icon: const Icon(Icons.add_rounded, size: 20),
+                          label: const Text("Add New Address"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: darkBrown,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 20),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                          ),
                         ),
-                        child: const Icon(Icons.location_on_outlined,
-                            color: primaryGold, size: 20),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Address ${index + 1}",
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: darkBrown,
-                                fontSize: 13,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              DummyData.currentUser.savedAddresses[index],
-                              style: TextStyle(
-                                color: darkBrown.withOpacity(0.6),
-                                fontSize: 12,
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        icon: const Icon(Icons.delete_outline,
-                            color: Colors.redAccent, size: 18),
-                        onPressed: () => _deleteAddress(index),
-                      ),
                     ],
                   ),
-                );
-              },
+                  const SizedBox(height: 32),
+                  isWide ? _buildWideGrid() : _buildMobileList(),
+                ],
+              ),
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _addNewAddress,
-        backgroundColor: darkBrown,
-        icon: const Icon(Icons.add, color: primaryGold),
-        label: const Text(
-          "Add New Address",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+      floatingActionButton: isWide
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => _addNewAddress(false),
+              backgroundColor: darkBrown,
+              icon: const Icon(Icons.add_rounded, color: primaryGold),
+              label: const Text(
+                "New Address",
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w900,
+          color: darkBrown,
+          letterSpacing: -0.5),
+    );
+  }
+
+  Widget _buildWideGrid() {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 24,
+        mainAxisSpacing: 24,
+        mainAxisExtent: 200,
+      ),
+      itemCount: DummyData.currentUser.savedAddresses.length,
+      itemBuilder: (context, index) => _buildAddressCard(index, true),
+    );
+  }
+
+  Widget _buildMobileList() {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: DummyData.currentUser.savedAddresses.length,
+      itemBuilder: (context, index) => _buildAddressCard(index, false),
+    );
+  }
+
+  Widget _buildAddressCard(int index, bool isWide) {
+    return Container(
+      margin: EdgeInsets.only(bottom: isWide ? 0 : 16),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE9ECEF)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: primaryGold.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.location_on_rounded,
+                    color: primaryGold, size: 20),
+              ),
+              IconButton(
+                onPressed: () => _deleteAddress(index),
+                icon: const Icon(Icons.delete_outline_rounded,
+                    color: Colors.redAccent, size: 20),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.redAccent.withValues(alpha: 0.05),
+                  padding: const EdgeInsets.all(8),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            "OFFICE / HOME",
+            style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: Text(
+              DummyData.currentUser.savedAddresses[index],
+              style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: darkBrown,
+                  fontSize: 14,
+                  height: 1.5),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -151,25 +247,32 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.location_off_outlined,
-            size: 80,
-            color: darkBrown.withOpacity(0.1),
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+                color: darkBrown.withValues(alpha: 0.05),
+                shape: BoxShape.circle),
+            child: Icon(Icons.location_off_rounded,
+                size: 64, color: darkBrown.withValues(alpha: 0.1)),
           ),
-          const SizedBox(height: 24),
-          const Text(
-            "No Saved Addresses",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: darkBrown,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "Add a delivery address to get started.",
-            style: TextStyle(
-              color: darkBrown.withOpacity(0.5),
+          const SizedBox(height: 32),
+          const Text("No Saved Addresses",
+              style: TextStyle(
+                  fontSize: 20, fontWeight: FontWeight.w900, color: darkBrown)),
+          const SizedBox(height: 12),
+          Text("Add your shipping destinations for a faster bespoke checkout.",
+              style: TextStyle(color: Colors.grey[500], fontSize: 14)),
+          const SizedBox(height: 40),
+          ElevatedButton.icon(
+            onPressed: () =>
+                _addNewAddress(MediaQuery.of(context).size.width > 900),
+            icon: const Icon(Icons.add_rounded),
+            label: const Text("Create New Address"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: darkBrown,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
             ),
           ),
         ],
@@ -178,22 +281,24 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
   }
 }
 
-class AddAddressBottomSheet extends StatefulWidget {
-  const AddAddressBottomSheet({super.key});
+class AddAddressForm extends StatefulWidget {
+  final bool isDialog;
+  const AddAddressForm({super.key, required this.isDialog});
 
   @override
-  State<AddAddressBottomSheet> createState() => _AddAddressBottomSheetState();
+  State<AddAddressForm> createState() => _AddAddressFormState();
 }
 
-class _AddAddressBottomSheetState extends State<AddAddressBottomSheet> {
+class _AddAddressFormState extends State<AddAddressForm> {
   String selectedType = 'Home';
   final _addressController = TextEditingController();
   final _apartmentController = TextEditingController();
   final _zipController = TextEditingController();
   static const Color primaryGold = Color(0xFFC9A227);
+  static const Color darkBrown = Color(0xFF131517);
+
   String? selectedState;
   String? selectedCity;
-
   List<String> states = [];
   List<String> cities = [];
   bool isLoadingStates = false;
@@ -206,69 +311,6 @@ class _AddAddressBottomSheetState extends State<AddAddressBottomSheet> {
     _fetchStates();
   }
 
-  Future<void> _getCurrentLocation() async {
-    setState(() => isLocating = true);
-    try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          throw 'Location permission denied';
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        throw 'Location permissions are permanently denied';
-      }
-
-      Position position = await Geolocator.getCurrentPosition();
-      List<Placemark> placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
-
-      if (placemarks.isNotEmpty) {
-        Placemark place = placemarks[0];
-        setState(() {
-          _addressController.text =
-              "${place.street ?? ''} ${place.subLocality ?? ''}".trim();
-          _zipController.text = place.postalCode ?? '';
-
-          // Try to match state
-          if (place.administrativeArea != null) {
-            final matchedState = states.firstWhere(
-              (s) => s
-                  .toLowerCase()
-                  .contains(place.administrativeArea!.toLowerCase()),
-              orElse: () => "",
-            );
-            if (matchedState.isNotEmpty) {
-              selectedState = matchedState;
-              _fetchCities(matchedState).then((_) {
-                if (place.locality != null) {
-                  final matchedCity = cities.firstWhere(
-                    (c) =>
-                        c.toLowerCase().contains(place.locality!.toLowerCase()),
-                    orElse: () => "",
-                  );
-                  if (matchedCity.isNotEmpty) {
-                    setState(() => selectedCity = matchedCity);
-                  }
-                }
-              });
-            }
-          }
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error getting location: $e')),
-      );
-    } finally {
-      setState(() => isLocating = false);
-    }
-  }
-
   Future<void> _fetchStates() async {
     setState(() => isLoadingStates = true);
     try {
@@ -277,7 +319,6 @@ class _AddAddressBottomSheetState extends State<AddAddressBottomSheet> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'country': 'India'}),
       );
-
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final List<dynamic> statesData = data['data']['states'];
@@ -288,7 +329,6 @@ class _AddAddressBottomSheetState extends State<AddAddressBottomSheet> {
       }
     } catch (e) {
       setState(() => isLoadingStates = false);
-      debugPrint('Error fetching states: $e');
     }
   }
 
@@ -304,7 +344,6 @@ class _AddAddressBottomSheetState extends State<AddAddressBottomSheet> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'country': 'India', 'state': stateName}),
       );
-
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final List<dynamic> citiesData = data['data'];
@@ -315,118 +354,100 @@ class _AddAddressBottomSheetState extends State<AddAddressBottomSheet> {
       }
     } catch (e) {
       setState(() => isLoadingCities = false);
-      debugPrint('Error fetching cities: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      decoration: const BoxDecoration(
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: BorderRadius.circular(widget.isDialog ? 32 : 0),
+        boxShadow: widget.isDialog
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 40,
+                )
+              ]
+            : null,
       ),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              "Add New Address",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2D2926),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextButton.icon(
-              onPressed: isLocating ? null : _getCurrentLocation,
-              icon: isLocating
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: primaryGold,
-                      ),
-                    )
-                  : const Icon(Icons.my_location, color: primaryGold, size: 20),
-              label: Text(
-                isLocating ? "Getting Location..." : "Use Current Location",
-                style: const TextStyle(
-                  color: primaryGold,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                _buildTypeChip("Home", "🏠"),
-                const SizedBox(width: 12),
-                _buildTypeChip("Office", "🏢"),
-                const SizedBox(width: 12),
-                _buildTypeChip("PO Box", "📫"),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _buildLabel("Address*"),
-            _buildTextField(_addressController, "8572 Winding Creek Boule"),
-            const SizedBox(height: 12),
-            _buildTextField(_apartmentController, "Apartment, suite, etc",
-                isRequired: false),
-            const SizedBox(height: 20),
-            _buildLabel("State*"),
-            _buildDropdown(
-              value: selectedState,
-              hint: isLoadingStates ? "Loading states..." : "Select state",
-              items: states,
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() => selectedState = val);
-                  _fetchCities(val);
-                }
-              },
-            ),
-            const SizedBox(height: 20),
-            _buildLabel("City*"),
-            _buildDropdown(
-              value: selectedCity,
-              hint: isLoadingCities ? "Loading cities..." : "Select city",
-              items: cities,
-              onChanged: (val) => setState(() => selectedCity = val),
-            ),
-            const SizedBox(height: 20),
-            _buildLabel("ZIP Code*"),
-            _buildTextField(_zipController, "Enter ZIP Code"),
+            const Text("Add New Destination",
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: darkBrown)),
+            const SizedBox(height: 8),
+            Text("Provide your full delivery details for our logistics team.",
+                style: TextStyle(color: Colors.grey[500], fontSize: 13)),
             const SizedBox(height: 32),
+            _buildLabel("Address Detail"),
+            _buildTextField(_addressController, "Street Address, Landmark"),
+            const SizedBox(height: 12),
+            _buildTextField(
+                _apartmentController, "Apartment, Suite, Unit (Optional)"),
+            const SizedBox(height: 24),
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildLabel("State"),
+                      _buildDropdown(
+                        value: selectedState,
+                        hint: "State",
+                        items: states,
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() => selectedState = val);
+                            _fetchCities(val);
+                          }
+                        },
                       ),
-                      side: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    child: const Text(
-                      "Cancel",
-                      style: TextStyle(
-                          color: Colors.black87, fontWeight: FontWeight.w600),
-                    ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildLabel("City"),
+                      _buildDropdown(
+                        value: selectedCity,
+                        hint: "City",
+                        items: cities,
+                        onChanged: (val) => setState(() => selectedCity = val),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildLabel("Postal Code"),
+            _buildTextField(_zipController, "ZIP / PIN Code",
+                keyboardType: TextInputType.number),
+            const SizedBox(height: 40),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 20)),
+                    child: const Text("Cancel",
+                        style: TextStyle(
+                            color: Colors.grey, fontWeight: FontWeight.w700)),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -444,16 +465,13 @@ class _AddAddressBottomSheetState extends State<AddAddressBottomSheet> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryGold,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 20),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
+                          borderRadius: BorderRadius.circular(16)),
                     ),
-                    child: const Text(
-                      "Submit",
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w600),
-                    ),
+                    child: const Text("Save Address",
+                        style: TextStyle(
+                            fontWeight: FontWeight.w900, color: Colors.white)),
                   ),
                 ),
               ],
@@ -464,100 +482,69 @@ class _AddAddressBottomSheetState extends State<AddAddressBottomSheet> {
     );
   }
 
-  Widget _buildTypeChip(String label, String emoji) {
-    final isSelected = selectedType == label;
-    return GestureDetector(
-      onTap: () => setState(() => selectedType = label),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: isSelected ? Colors.black87 : Colors.transparent,
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 16)),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.black87 : Colors.grey.shade600,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildLabel(String label) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: Colors.black87,
-        ),
-      ),
+      child: Text(label,
+          style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: darkBrown,
+              letterSpacing: 0.5)),
     );
   }
 
   Widget _buildTextField(TextEditingController controller, String hint,
-      {bool isRequired = true}) {
+      {TextInputType? keyboardType}) {
     return TextField(
       controller: controller,
+      keyboardType: keyboardType,
+      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+        hintStyle: TextStyle(
+            color: Colors.grey[400], fontSize: 14, fontWeight: FontWeight.w500),
         filled: true,
         fillColor: Colors.white,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.all(20),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade200),
-        ),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xFFE9ECEF))),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF1E3A8A), width: 1),
-        ),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: primaryGold, width: 2)),
       ),
     );
   }
 
-  Widget _buildDropdown({
-    required String? value,
-    required String hint,
-    required List<String> items,
-    required Function(String?) onChanged,
-  }) {
+  Widget _buildDropdown(
+      {required String? value,
+      required String hint,
+      required List<String> items,
+      required Function(String?) onChanged}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE9ECEF)),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
           hint: Text(hint,
-              style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
+              style: TextStyle(
+                  color: Colors.grey[400],
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500)),
           isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-          items: items.map((String item) {
-            return DropdownMenuItem<String>(
-              value: item,
-              child: Text(item, style: const TextStyle(fontSize: 14)),
-            );
-          }).toList(),
+          items: items
+              .map((String item) => DropdownMenuItem<String>(
+                  value: item,
+                  child: Text(item,
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w600))))
+              .toList(),
           onChanged: onChanged,
         ),
       ),

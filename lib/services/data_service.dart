@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/dummy_data.dart';
+import 'supabase_service.dart';
 
 class DataService {
   static final DataService _instance = DataService._internal();
@@ -114,31 +115,66 @@ class DataService {
   // User methods
   void updateUserData({
     String? name,
+    String? lastName,
     String? email,
     String? phone,
+    String? dob,
     List<String>? savedAddresses,
     Map<String, String>? bodyMeasurements,
   }) {
     final user = DummyData.currentUser;
     if (name != null) user.name = name;
+    if (lastName != null) user.lastName = lastName;
     if (email != null) user.email = email;
     if (phone != null) user.phone = phone;
+    if (dob != null) user.dob = dob;
     if (savedAddresses != null) user.savedAddresses = savedAddresses;
     if (bodyMeasurements != null) user.bodyMeasurements = bodyMeasurements;
+    
+    // Sync to Supabase in the background
+    SupabaseService.updateCustomerProfile(user).catchError((e) {
+      print('Failed to sync updated user data: $e');
+    });
   }
 
   void addSavedAddress(String address) {
     if (!DummyData.currentUser.savedAddresses.contains(address)) {
       DummyData.currentUser.savedAddresses.add(address);
+      
+      // Sync to Supabase in the background
+      SupabaseService.updateCustomerProfile(DummyData.currentUser).catchError((e) {
+        print('Failed to sync added address: $e');
+      });
     }
   }
 
   void removeSavedAddress(String address) {
-    DummyData.currentUser.savedAddresses.remove(address);
+    if (DummyData.currentUser.savedAddresses.contains(address)) {
+      DummyData.currentUser.savedAddresses.remove(address);
+      
+      // Sync to Supabase in the background
+      SupabaseService.updateCustomerProfile(DummyData.currentUser).catchError((e) {
+        print('Failed to sync removed address: $e');
+      });
+    }
   }
 
   void updateBodyMeasurement(String measurement, String value) {
     DummyData.currentUser.bodyMeasurements[measurement] = value;
+    
+    // Sync to Supabase in the background
+    SupabaseService.updateCustomerProfile(DummyData.currentUser).catchError((e) {
+      print('Failed to sync updated body measurement: $e');
+    });
+  }
+
+  void updateAllBodyMeasurements(Map<String, String> newMeasurements) {
+    DummyData.currentUser.bodyMeasurements = newMeasurements;
+    
+    // Sync to Supabase in the background
+    SupabaseService.updateCustomerProfile(DummyData.currentUser).catchError((e) {
+      print('Failed to sync updated body measurements: $e');
+    });
   }
 
   // Tailor methods

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/dummy_data.dart';
 
 class OrderDetailScreen extends StatefulWidget {
@@ -14,69 +15,133 @@ class OrderDetailScreen extends StatefulWidget {
 }
 
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
-  final Color primaryBrown = const Color(0xFF5D4037);
-  final Color accentBrown = const Color(0xFFA67C52);
-  final Color lightBg = const Color(0xFFFAF5F1);
+  static const Color primaryGold = Color(0xFFC9A227);
+  static const Color lightCream = Color(0xFFFDFCFB);
+  static const Color darkBrown = Color(0xFF131517);
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isWide = size.width > 900;
+
     return Scaffold(
-      backgroundColor: lightBg,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: primaryBrown),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text('Order Details',
+      backgroundColor: lightCream,
+      appBar: _buildAppBar(context),
+      body: isWide ? _buildWideLayout() : _buildMobileLayout(),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      centerTitle: false,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new_rounded,
+            color: darkBrown, size: 20),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Order Details',
             style: TextStyle(
-                color: primaryBrown,
-                fontWeight: FontWeight.bold,
-                fontSize: 22)),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.share, color: primaryBrown),
-            onPressed: () {
-              _showSnackBar(
-                  context, 'Sharing order ${widget.order.orderNumber}');
-            },
+                color: darkBrown, fontWeight: FontWeight.w900, fontSize: 18),
+          ),
+          Text(
+            '#${widget.order.orderNumber}',
+            style: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 12,
+                fontWeight: FontWeight.w600),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildOrderHeader(),
-            _buildOrderStatus(),
-            _buildProgressSection(),
-            _buildItemsSection(),
-            _buildPricingSection(),
-            _buildDeliveryInfo(),
-            _buildTailorInfo(),
-            _buildActionButtons(context),
-          ],
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.share_outlined, color: darkBrown, size: 20),
+          onPressed: () {},
         ),
+        const SizedBox(width: 8),
+      ],
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStatusCard(),
+          const SizedBox(height: 24),
+          _buildItemsSection(),
+          const SizedBox(height: 24),
+          _buildTailorInfo(),
+          const SizedBox(height: 24),
+          _buildDeliveryInfo(),
+          const SizedBox(height: 24),
+          _buildPricingSection(),
+          const SizedBox(height: 40),
+          _buildActionButtons(false),
+          const SizedBox(height: 40),
+        ],
       ),
     );
   }
 
-  Widget _buildOrderHeader() {
+  Widget _buildWideLayout() {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(40),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildStatusCard(),
+                const SizedBox(height: 32),
+                _buildItemsSection(),
+              ],
+            ),
+          ),
+          const SizedBox(width: 40),
+          Expanded(
+            flex: 1,
+            child: Column(
+              children: [
+                _buildTailorInfo(),
+                const SizedBox(height: 24),
+                _buildDeliveryInfo(),
+                const SizedBox(height: 24),
+                _buildPricingSection(),
+                const SizedBox(height: 32),
+                _buildActionButtons(true),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusCard() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE9ECEF)),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -86,241 +151,230 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const Text(
+                'Track Progress',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: darkBrown),
+              ),
+              _buildStatusBadge(widget.order.status),
+            ],
+          ),
+          const SizedBox(height: 32),
+          _buildProgressStepper(widget.order.status),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(OrderStatus status) {
+    Color color = _getStatusColor(status);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        _getStatusText(status).toUpperCase(),
+        style: TextStyle(
+            color: color,
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.5),
+      ),
+    );
+  }
+
+  Widget _buildProgressStepper(OrderStatus status) {
+    final steps = ['Ordered', 'Measured', 'Stitching', 'Shipped'];
+    int currentStep = _getStepIndex(status);
+
+    return Row(
+      children: List.generate(steps.length, (index) {
+        bool isPast = index < currentStep;
+        bool isCurrent = index == currentStep;
+        bool isLast = index == steps.length - 1;
+
+        return Expanded(
+          child: Column(
+            children: [
+              Row(
                 children: [
-                  Text(
-                    widget.order.orderNumber,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
+                  Expanded(
+                    child: index == 0
+                        ? const SizedBox()
+                        : Container(
+                            height: 2,
+                            color: index <= currentStep
+                                ? primaryGold
+                                : const Color(0xFFE9ECEF),
+                          ),
+                  ),
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: index <= currentStep ? primaryGold : Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: index <= currentStep
+                            ? primaryGold
+                            : const Color(0xFFE9ECEF),
+                        width: 2,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Placed on ${_formatDate(widget.order.orderDate)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[500],
-                    ),
+                  Expanded(
+                    child: isLast
+                        ? const SizedBox()
+                        : Container(
+                            height: 2,
+                            color: index < currentStep
+                                ? primaryGold
+                                : const Color(0xFFE9ECEF),
+                          ),
                   ),
                 ],
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: _getStatusColor(widget.order.status),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  _getStatusText(widget.order.status),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Icon(Icons.location_on, size: 16, color: primaryBrown),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  widget.order.deliveryAddress,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOrderStatus() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Order Status',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: primaryBrown,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _buildDetailedProgressStepper(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProgressSection() {
-    final isActiveOrder = widget.order.status == OrderStatus.pending ||
-        widget.order.status == OrderStatus.confirmed ||
-        widget.order.status == OrderStatus.stitching ||
-        widget.order.status == OrderStatus.ready ||
-        widget.order.status == OrderStatus.shipped;
-
-    if (!isActiveOrder) return const SizedBox.shrink();
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: accentBrown.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accentBrown.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.info_outline, color: accentBrown, size: 20),
-              const SizedBox(width: 8),
+              const SizedBox(height: 12),
               Text(
-                'Expected Delivery',
+                steps[index],
                 style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: accentBrown,
+                  fontSize: 11,
+                  fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600,
+                  color: isCurrent
+                      ? darkBrown
+                      : (isPast ? primaryGold : Colors.grey[400]),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            '${_getExpectedDeliveryDays()} days from now',
-            style: TextStyle(
-              fontSize: 13,
-              color: primaryBrown,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Your order is being processed with care',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
+        );
+      }),
     );
   }
 
   Widget _buildItemsSection() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Order Items (${widget.order.items.length})',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: primaryBrown,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...widget.order.items.map((item) => _buildOrderItem(item)).toList(),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Order Items',
+          style: TextStyle(
+              fontSize: 18, fontWeight: FontWeight.w800, color: darkBrown),
+        ),
+        const SizedBox(height: 16),
+        ...widget.order.items.map((item) => _buildOrderItem(item)),
+      ],
     );
   }
 
   Widget _buildOrderItem(OrderItem item) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE9ECEF)),
+      ),
       child: Row(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              item.product.image,
-              width: 60,
-              height: 80,
-              fit: BoxFit.cover,
-            ),
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(item.product.image,
+                width: 60, height: 80, fit: BoxFit.cover),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(item.product.name,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w800, fontSize: 15)),
+                const SizedBox(height: 6),
                 Text(
-                  item.product.name,
+                  'Size: ${item.size} • Fabric: ${item.fabric ?? item.product.fabric}',
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: primaryBrown,
-                  ),
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Size: ${item.size} | Qty: ${item.quantity}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Fabric: ${item.product.fabric}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  'Qty: ${item.quantity}',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 11),
                 ),
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Text(
+            DummyData.formatPrice(item.price * item.quantity),
+            style: const TextStyle(
+                fontWeight: FontWeight.w900, color: primaryGold, fontSize: 16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTailorInfo() {
+    return _buildInfoCard(
+      'Tailor Partner',
+      widget.order.tailorName,
+      widget.order.tailorAddress,
+      Icons.storefront_rounded,
+    );
+  }
+
+  Widget _buildDeliveryInfo() {
+    return _buildInfoCard(
+      'Shipping Address',
+      'Primary Residence',
+      widget.order.deliveryAddress,
+      Icons.local_shipping_rounded,
+    );
+  }
+
+  Widget _buildInfoCard(
+      String section, String title, String subtitle, IconData icon) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE9ECEF)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Text(
-                DummyData.formatPrice(item.price * item.quantity),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: primaryBrown,
-                ),
-              ),
-              if (item.quantity > 1)
-                Text(
-                  '(${item.quantity} × ${DummyData.formatPrice(item.price)})',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey[500],
-                  ),
-                ),
+              Icon(icon, size: 20, color: primaryGold),
+              const SizedBox(width: 12),
+              Text(section,
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: darkBrown)),
             ],
+          ),
+          const SizedBox(height: 20),
+          Text(title,
+              style:
+                  const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 13,
+                height: 1.5,
+                fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -329,339 +383,112 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   Widget _buildPricingSection() {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        color: darkBrown,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Price Details',
+          const Text(
+            'Order Summary',
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: primaryBrown,
-            ),
+                color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: 12),
-          _priceRow(
-              'Subtotal', DummyData.formatPrice(widget.order.totalAmount)),
-          _priceRow('Delivery Charges', 'FREE', isFree: true),
-          _priceRow('Packaging', 'FREE', isFree: true),
-          const Divider(),
-          _priceRow(
-            'Total Amount',
-            DummyData.formatPrice(widget.order.totalAmount),
-            isBold: true,
-          ),
+          const SizedBox(height: 24),
+          _priceRow('Subtotal', DummyData.formatPrice(widget.order.totalAmount),
+              Colors.white70),
+          _priceRow('Shipping', 'FREE', Colors.greenAccent),
+          const Divider(color: Colors.white10, height: 32),
+          _priceRow('Total Amount',
+              DummyData.formatPrice(widget.order.totalAmount), Colors.white,
+              isBold: true),
         ],
       ),
     );
   }
 
-  Widget _buildDeliveryInfo() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Delivery Information',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: primaryBrown,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(Icons.location_on, size: 16, color: primaryBrown),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  widget.order.deliveryAddress,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (widget.order.deliveryDate != null) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.calendar_today, size: 16, color: primaryBrown),
-                const SizedBox(width: 8),
-                Text(
-                  'Delivered on ${_formatDate(widget.order.deliveryDate!)}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTailorInfo() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Tailor Information',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: primaryBrown,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(Icons.store, size: 16, color: primaryBrown),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.order.tailorName,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: primaryBrown,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.order.tailorAddress,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(BuildContext context) {
-    final isActiveOrder = widget.order.status == OrderStatus.pending ||
-        widget.order.status == OrderStatus.confirmed ||
-        widget.order.status == OrderStatus.stitching ||
-        widget.order.status == OrderStatus.ready ||
-        widget.order.status == OrderStatus.shipped;
-
-    return Container(
-      margin: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          if (isActiveOrder)
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  _showSnackBar(
-                      context, 'Tracking order ${widget.order.orderNumber}');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: accentBrown,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Track Order',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          if (isActiveOrder) const SizedBox(height: 12),
-          if (!isActiveOrder)
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () {
-                  _showSnackBar(context,
-                      'Reordering items from ${widget.order.orderNumber}');
-                },
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: accentBrown),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  'Reorder Items',
-                  style: TextStyle(
-                    color: accentBrown,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: TextButton(
-              onPressed: () {
-                _showSnackBar(context,
-                    'Contact support for order ${widget.order.orderNumber}');
-              },
-              child: Text(
-                'Need Help?',
-                style: TextStyle(
-                  color: primaryBrown,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailedProgressStepper() {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _stepIcon(Icons.shopping_bag_outlined, "Order Placed",
-                _isStepCompleted(0)),
-            _stepIcon(Icons.edit_outlined, "Picked Up", _isStepCompleted(1)),
-            _stepIcon(
-                Icons.colorize_outlined, "Stitching", _isStepCompleted(2)),
-            _stepIcon(
-                Icons.local_shipping_outlined, "Shipped", _isStepCompleted(3)),
-            _stepIcon(
-                Icons.check_circle_outline, "Delivered", _isStepCompleted(4)),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              height: 2,
-              color: Colors.grey.shade200,
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(
-                5,
-                (index) => CircleAvatar(
-                  radius: 4,
-                  backgroundColor: _getStepColor(index),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Order Placed',
-                style: TextStyle(fontSize: 10, color: Colors.grey[600])),
-            Text('Picked Up',
-                style: TextStyle(fontSize: 10, color: Colors.grey[600])),
-            Text('Stitching',
-                style: TextStyle(fontSize: 10, color: Colors.grey[600])),
-            Text('Shipped',
-                style: TextStyle(fontSize: 10, color: Colors.grey[600])),
-            Text('Delivered',
-                style: TextStyle(fontSize: 10, color: Colors.grey[600])),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _stepIcon(IconData icon, String label, bool isActive) {
-    Color color = isActive ? primaryBrown : Colors.grey;
-    return Column(
-      children: [
-        Icon(icon, size: 20, color: color),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: color,
-            fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
-  Widget _priceRow(String label, String price,
-      {bool isBold = false, bool isFree = false}) {
+  Widget _priceRow(String label, String value, Color color,
+      {bool isBold = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          Text(label,
+              style:
+                  TextStyle(color: color.withValues(alpha: 0.6), fontSize: 14)),
           Text(
-            label,
+            value,
             style: TextStyle(
-              fontSize: isBold ? 16 : 14,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-              color: Colors.grey[700],
-            ),
-          ),
-          Text(
-            price,
-            style: TextStyle(
-              fontSize: isBold ? 16 : 14,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-              color: isFree ? Colors.green : Colors.grey[700],
+              color: color,
+              fontSize: isBold ? 18 : 15,
+              fontWeight: isBold ? FontWeight.w900 : FontWeight.w700,
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildActionButtons(bool isWide) {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () {},
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryGold,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              elevation: 0,
+            ),
+            child: const Text('Download Invoice',
+                style: TextStyle(fontWeight: FontWeight.w800)),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: TextButton(
+            onPressed: () {},
+            child: const Text('Contact Support',
+                style:
+                    TextStyle(color: darkBrown, fontWeight: FontWeight.w700)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  int _getStepIndex(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.pending:
+        return 0;
+      case OrderStatus.confirmed:
+        return 1;
+      case OrderStatus.stitching:
+        return 2;
+      case OrderStatus.ready:
+        return 2;
+      case OrderStatus.shipped:
+        return 3;
+      case OrderStatus.delivered:
+        return 3;
+      case OrderStatus.cancelled:
+        return 0;
+    }
   }
 
   Color _getStatusColor(OrderStatus status) {
@@ -686,13 +513,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   String _getStatusText(OrderStatus status) {
     switch (status) {
       case OrderStatus.pending:
-        return 'Pending';
+        return 'Processing';
       case OrderStatus.confirmed:
         return 'Confirmed';
       case OrderStatus.stitching:
-        return 'Stitching';
+        return 'In Stitching';
       case OrderStatus.ready:
-        return 'Ready';
+        return 'Ready to Ship';
       case OrderStatus.shipped:
         return 'Shipped';
       case OrderStatus.delivered:
@@ -700,81 +527,5 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       case OrderStatus.cancelled:
         return 'Cancelled';
     }
-  }
-
-  bool _isStepCompleted(int step) {
-    switch (widget.order.status) {
-      case OrderStatus.pending:
-        return step == 0;
-      case OrderStatus.confirmed:
-        return step <= 1;
-      case OrderStatus.stitching:
-        return step <= 2;
-      case OrderStatus.ready:
-        return step <= 2;
-      case OrderStatus.shipped:
-        return step <= 3;
-      case OrderStatus.delivered:
-        return step <= 4;
-      case OrderStatus.cancelled:
-        return false;
-    }
-  }
-
-  Color _getStepColor(int step) {
-    if (_isStepCompleted(step)) {
-      return accentBrown;
-    }
-    return Colors.grey.shade300;
-  }
-
-  int _getExpectedDeliveryDays() {
-    switch (widget.order.status) {
-      case OrderStatus.pending:
-        return 7;
-      case OrderStatus.confirmed:
-        return 6;
-      case OrderStatus.stitching:
-        return 4;
-      case OrderStatus.ready:
-        return 2;
-      case OrderStatus.shipped:
-        return 1;
-      case OrderStatus.delivered:
-        return 0;
-      case OrderStatus.cancelled:
-        return 0;
-    }
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day} ${_getMonthName(date.month)} ${date.year}';
-  }
-
-  String _getMonthName(int month) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
-    ];
-    return months[month - 1];
-  }
-
-  void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: accentBrown,
-      ),
-    );
   }
 }

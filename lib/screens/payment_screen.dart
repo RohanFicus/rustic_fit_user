@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
+
 import '../models/dummy_data.dart';
 import 'main_container.dart';
 
 class PaymentScreen extends StatefulWidget {
   final Product product;
+  final String? customFabric;
+  final String? customColor;
+  final String? customType;
 
-  const PaymentScreen({super.key, required this.product});
+  const PaymentScreen({
+    super.key,
+    required this.product,
+    this.customFabric,
+    this.customColor,
+    this.customType,
+  });
 
   @override
   State<PaymentScreen> createState() => _PaymentScreenState();
@@ -13,73 +23,59 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   static const Color primaryGold = Color(0xFFC9A227);
-  static const Color lightCream = Color(0xFFF7F5F2);
-  static const Color darkBrown = Color(0xFF2D2926);
+  static const Color lightCream = Color(0xFFFDFCFB);
+  static const Color darkBrown = Color(0xFF131517);
 
   int _selectedMethod = 0; // 0: Card, 1: UPI, 2: COD
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isWide = size.width > 900;
+
     return Scaffold(
       backgroundColor: lightCream,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: darkBrown),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: darkBrown, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          "Payment",
-          style: TextStyle(color: darkBrown, fontWeight: FontWeight.bold),
+          "Finalize Payment",
+          style: TextStyle(
+              color: darkBrown, fontWeight: FontWeight.w900, fontSize: 18),
         ),
       ),
       body: Column(
         children: [
           _buildProgressStepper(),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildOrderSummary(),
-                  const SizedBox(height: 32),
-                  const Text(
-                    "Payment Method",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: darkBrown,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildPaymentMethod(0, "Credit / Debit Card", Icons.credit_card),
-                  _buildPaymentMethod(1, "UPI / Digital Wallet", Icons.account_balance_wallet_outlined),
-                  _buildPaymentMethod(2, "Cash on Delivery", Icons.payments_outlined),
-                  const SizedBox(height: 32),
-                  _buildPriceBreakdown(),
-                  const SizedBox(height: 100),
-                ],
-              ),
-            ),
+            child: isWide ? _buildWideLayout() : _buildMobileLayout(),
           ),
         ],
       ),
-      bottomSheet: _buildBottomAction(),
+      bottomNavigationBar: isWide ? null : _buildBottomAction(false),
     );
   }
 
   Widget _buildProgressStepper() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-      color: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 40),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: const Color(0xFFE9ECEF))),
+      ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _buildStep(1, "Fitting", true, true),
-          _buildDivider(true),
+          _buildConnector(true),
           _buildStep(2, "Address", true, true),
-          _buildDivider(true),
+          _buildConnector(true),
           _buildStep(3, "Payment", true, false),
         ],
       ),
@@ -87,102 +83,206 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Widget _buildStep(int step, String label, bool isActive, bool isCompleted) {
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 24,
-          height: 24,
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          width: 32,
+          height: 32,
           decoration: BoxDecoration(
-            color: isCompleted ? primaryGold : (isActive ? primaryGold : Colors.grey.withOpacity(0.2)),
+            color: isCompleted || isActive ? primaryGold : Colors.white,
             shape: BoxShape.circle,
+            border: Border.all(
+              color: isCompleted || isActive
+                  ? primaryGold
+                  : const Color(0xFFE9ECEF),
+              width: 2,
+            ),
+            boxShadow: isActive && !isCompleted
+                ? [
+                    BoxShadow(
+                        color: primaryGold.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4))
+                  ]
+                : null,
           ),
           child: Center(
-            child: isCompleted 
-              ? const Icon(Icons.check, color: Colors.white, size: 14)
-              : Text(
-                  step.toString(),
-                  style: TextStyle(
-                    color: isActive ? Colors.white : darkBrown.withOpacity(0.5),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+            child: isCompleted
+                ? const Icon(Icons.check, color: Colors.white, size: 16)
+                : Text(
+                    step.toString(),
+                    style: TextStyle(
+                      color: isActive ? Colors.white : Colors.grey[400],
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                    ),
                   ),
-                ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(height: 8),
         Text(
           label,
           style: TextStyle(
-            color: isActive ? darkBrown : darkBrown.withOpacity(0.5),
-            fontSize: 12,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            color: isActive ? darkBrown : Colors.grey[400],
+            fontSize: 11,
+            fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildDivider(bool isActive) {
-    return Expanded(
-      child: Container(
-        height: 1,
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        color: isActive ? primaryGold : Colors.grey.withOpacity(0.2),
+  Widget _buildConnector(bool isActive) {
+    return Container(
+      width: 60,
+      height: 2,
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
+      color: isActive ? primaryGold : const Color(0xFFE9ECEF),
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildOrderSummaryCard(false),
+          const SizedBox(height: 32),
+          _buildSectionHeader(
+              "Payment Method", Icons.account_balance_wallet_outlined),
+          const SizedBox(height: 16),
+          _buildPaymentMethod(
+              0, "Credit / Debit Card", Icons.credit_card_rounded),
+          _buildPaymentMethod(
+              1, "UPI / Digital Wallet", Icons.qr_code_2_rounded),
+          _buildPaymentMethod(2, "Cash on Delivery", Icons.payments_rounded),
+          const SizedBox(height: 32),
+          _buildPriceBreakdown(),
+          const SizedBox(height: 40),
+        ],
       ),
     );
   }
 
-  Widget _buildOrderSummary() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
-      ),
+  Widget _buildWideLayout() {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(40),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Image.network(
-              widget.product.image,
-              width: 80,
-              height: 80,
-              fit: BoxFit.cover,
-            ),
-          ),
-          const SizedBox(width: 16),
           Expanded(
+            flex: 2,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  widget.product.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: darkBrown,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "${widget.product.category} • Bespoke",
-                  style: TextStyle(
-                    color: darkBrown.withOpacity(0.5),
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  DummyData.formatPrice(widget.product.price),
-                  style: const TextStyle(
-                    color: primaryGold,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
+                _buildSectionHeader("Select Payment Mode",
+                    Icons.account_balance_wallet_outlined),
+                const SizedBox(height: 32),
+                _buildPaymentMethod(
+                    0, "Credit / Debit Card", Icons.credit_card_rounded),
+                _buildPaymentMethod(
+                    1, "UPI / Digital Wallet", Icons.qr_code_2_rounded),
+                _buildPaymentMethod(
+                    2, "Cash on Delivery", Icons.payments_rounded),
+                const SizedBox(height: 40),
+                _buildSectionHeader(
+                    "Price Breakdown", Icons.receipt_long_outlined),
+                const SizedBox(height: 24),
+                _buildPriceBreakdown(),
               ],
             ),
+          ),
+          const SizedBox(width: 60),
+          Expanded(
+            flex: 1,
+            child: Column(
+              children: [
+                _buildOrderSummaryCard(true),
+                const SizedBox(height: 32),
+                _buildBottomAction(true),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: primaryGold, size: 20),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: const TextStyle(
+              fontSize: 18, fontWeight: FontWeight.w900, color: darkBrown),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOrderSummaryCard(bool isWide) {
+    return Container(
+      padding: EdgeInsets.all(isWide ? 32 : 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: const Color(0xFFE9ECEF)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Garment Details",
+            style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w900, color: darkBrown),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(widget.product.image,
+                    width: 80, height: 100, fit: BoxFit.cover),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(widget.product.name,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    Text(
+                      "${widget.customFabric ?? widget.product.fabric} • ${widget.customType ?? widget.product.type}",
+                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      DummyData.formatPrice(widget.product.price),
+                      style: const TextStyle(
+                          color: primaryGold,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -193,43 +293,66 @@ class _PaymentScreenState extends State<PaymentScreen> {
     final isSelected = _selectedMethod == index;
     return GestureDetector(
       onTap: () => setState(() => _selectedMethod = index),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? Colors.white : const Color(0xFFF8F9FA),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? primaryGold : Colors.black.withOpacity(0.05),
+            color: isSelected ? primaryGold : const Color(0xFFE9ECEF),
             width: isSelected ? 2 : 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                      color: primaryGold.withValues(alpha: 0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10))
+                ]
+              : null,
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isSelected ? primaryGold.withOpacity(0.1) : lightCream,
+                color: isSelected ? primaryGold : Colors.white,
                 borderRadius: BorderRadius.circular(12),
+                boxShadow: isSelected
+                    ? null
+                    : [
+                        BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 10)
+                      ],
               ),
-              child: Icon(
-                icon,
-                color: isSelected ? primaryGold : darkBrown.withOpacity(0.5),
-                size: 24,
-              ),
+              child: Icon(icon,
+                  color: isSelected ? Colors.white : primaryGold, size: 22),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 20),
             Text(
               title,
               style: TextStyle(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: darkBrown,
-                fontSize: 15,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? darkBrown : Colors.grey[600],
+                fontSize: 16,
               ),
             ),
             const Spacer(),
             if (isSelected)
-              const Icon(Icons.check_circle, color: primaryGold, size: 24),
+              const Icon(Icons.check_circle_rounded,
+                  color: primaryGold, size: 24)
+            else
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFE9ECEF), width: 2),
+                ),
+              ),
           ],
         ),
       ),
@@ -238,80 +361,94 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   Widget _buildPriceBreakdown() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        color: darkBrown,
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          _buildPriceRow("Item Total", widget.product.price),
-          const SizedBox(height: 12),
-          _buildPriceRow("Home Measurement Fee", 0, isFree: true),
-          const SizedBox(height: 12),
-          _buildPriceRow("Delivery Fee", 0, isFree: true),
-          const Divider(height: 32),
-          _buildPriceRow("Grand Total", widget.product.price, isTotal: true),
+          _buildPriceRow("Garment Total", widget.product.price, Colors.white70),
+          const SizedBox(height: 16),
+          _buildPriceRow("Master Tailor Visit", 0, Colors.greenAccent,
+              isFree: true),
+          const SizedBox(height: 16),
+          _buildPriceRow("Premium Packaging", 0, Colors.greenAccent,
+              isFree: true),
+          const SizedBox(height: 16),
+          _buildPriceRow("Bespoke Shipping", 0, Colors.greenAccent,
+              isFree: true),
+          const Divider(color: Colors.white10, height: 48),
+          _buildPriceRow("Grand Total", widget.product.price, Colors.white,
+              isTotal: true),
         ],
       ),
     );
   }
 
-  Widget _buildPriceRow(String label, double amount, {bool isTotal = false, bool isFree = false}) {
+  Widget _buildPriceRow(String label, double amount, Color color,
+      {bool isTotal = false, bool isFree = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
           style: TextStyle(
-            color: isTotal ? darkBrown : darkBrown.withOpacity(0.6),
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+            color: color.withValues(alpha: 0.6),
+            fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
             fontSize: isTotal ? 16 : 14,
           ),
         ),
         Text(
-          isFree ? "FREE" : DummyData.formatPrice(amount),
+          isFree ? "COMPLIMENTARY" : DummyData.formatPrice(amount),
           style: TextStyle(
-            color: isFree ? Colors.green : (isTotal ? primaryGold : darkBrown),
-            fontWeight: FontWeight.bold,
-            fontSize: isTotal ? 20 : 14,
+            color: color,
+            fontWeight: FontWeight.w900,
+            fontSize: isTotal ? 24 : 15,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildBottomAction() {
+  Widget _buildBottomAction(bool isWide) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      padding: EdgeInsets.all(isWide ? 0 : 24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
+        color: isWide ? Colors.transparent : Colors.white,
+        border: isWide
+            ? null
+            : Border(top: BorderSide(color: const Color(0xFFE9ECEF))),
       ),
-      child: SizedBox(
-        width: double.infinity,
-        child: FilledButton(
-          onPressed: () => _showSuccessDialog(),
-          style: FilledButton.styleFrom(
-            backgroundColor: primaryGold,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 18),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => _showSuccessDialog(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryGold,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+              ),
+              child: const Text(
+                "Authorize & Place Order",
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+              ),
             ),
           ),
-          child: const Text(
-            "Pay & Place Order",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-        ),
+        ],
       ),
     );
   }
@@ -321,57 +458,66 @@ class _PaymentScreenState extends State<PaymentScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        child: Padding(
-          padding: const EdgeInsets.all(32),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.all(40),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(40),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
+                  color: Colors.green.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_circle, color: Colors.green, size: 64),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                "Order Placed!",
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: darkBrown,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                "Your bespoke outfit request has been received. Our master tailor will contact you shortly.",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: darkBrown.withOpacity(0.6),
-                  fontSize: 15,
-                  height: 1.5,
-                ),
+                child: const Icon(Icons.check_rounded,
+                    color: Colors.green, size: 48),
               ),
               const SizedBox(height: 32),
+              const Text(
+                "Order Secured",
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: darkBrown),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "Your bespoke journey has begun. Our master tailor will coordinate your measurement appointment shortly.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                    height: 1.6,
+                    fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 40),
               SizedBox(
                 width: double.infinity,
-                child: FilledButton(
+                child: ElevatedButton(
                   onPressed: () {
                     Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (context) => const MainContainer()),
+                      MaterialPageRoute(
+                          builder: (context) => const MainContainer()),
                       (route) => false,
                     );
                   },
-                  style: FilledButton.styleFrom(
+                  style: ElevatedButton.styleFrom(
                     backgroundColor: darkBrown,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                        borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
                   ),
-                  child: const Text("Continue Shopping"),
+                  child: const Text("Return to Studio",
+                      style: TextStyle(fontWeight: FontWeight.w800)),
                 ),
               ),
             ],
