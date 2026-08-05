@@ -38,7 +38,7 @@ dependencies:
   # Splash screen package
   flutter_native_splash: ^2.4.1
 
-  supabase_flutter: ^2.6.0
+#  supabase_flutter: ^2.6.0
   shared_preferences: ^2.2.0
 
   # Country picker and icons

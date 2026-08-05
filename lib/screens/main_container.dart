@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:rustic_fit/my_orders_screen.dart';
 import 'package:rustic_fit/screens/profile_screen.dart';
 import 'package:rustic_fit/screens/schedule_screen.dart';
+import 'package:rustic_fit/screens/mobile_auth_screen.dart';
+import 'package:rustic_fit/services/api_service.dart';
 
 import '../widgets/custom_bottom_nav.dart';
 import 'home_screen.dart';
@@ -46,6 +48,36 @@ class _MainContainerState extends State<MainContainer> {
     setState(() {
       _currentIndex = index;
     });
+  }
+
+  void _logout() async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sign Out'),
+        content: const Text('Are you sure you want to sign out of your account?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await ApiService.clearSession();
+              if (mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MobileAuthScreen()),
+                  (route) => false,
+                );
+              }
+            },
+            child: const Text('Sign Out', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -205,7 +237,7 @@ class _MainContainerState extends State<MainContainer> {
                   item: NavItem(icon: Icons.logout_rounded, label: 'Logout'),
                   isSelected: false,
                   isExpanded: _isExpanded,
-                  onTap: () {},
+                  onTap: _logout,
                 ),
               ],
             ),

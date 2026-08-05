@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'onboarding_screen.dart';
 import 'main_container.dart';
-import '../services/supabase_service.dart';
+import '../services/api_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -53,11 +53,11 @@ class _SplashScreenState extends State<SplashScreen>
 
   _navigateToNext() async {
     // Check if there is an active session
-    final savedPhone = await SupabaseService.getSavedSession();
+    final savedPhone = await ApiService.getSavedSession();
     bool sessionRestored = false;
 
     if (savedPhone != null && savedPhone.isNotEmpty) {
-      sessionRestored = await SupabaseService.restoreSession(savedPhone);
+      sessionRestored = await ApiService.restoreSession(savedPhone);
     }
 
     // Keep splash screen for at least 2 seconds (was 3s, but since restore fetches over net, 2s is plenty)

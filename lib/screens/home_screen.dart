@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:rustic_fit/screens/location_selection_screen.dart';
 import 'package:rustic_fit/screens/product_detail_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/dummy_data.dart';
+import '../services/api_service.dart';
+import 'sub_categories_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,25 +19,169 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   int _currentImageIndex = 0;
   String _selectedCategory = "All";
-  String _currentLocation = "Faridabad, Haryana";
+  String _currentLocation = "Select Location";
   String _searchQuery = "";
 
-  final List<String> _heroImages = [
+  List<String> _heroImages = [
     'https://plus.unsplash.com/premium_photo-1769290472496-62ffdb7003fb?q=80&w=2070&auto=format&fit=crop',
     'https://plus.unsplash.com/premium_photo-1768823132446-915e5707a70d?q=80&w=2073&auto=format&fit=crop',
     'https://plus.unsplash.com/premium_photo-1768823132441-b49d729ae5ca?q=80&w=2070&auto=format&fit=crop',
     'https://plus.unsplash.com/premium_photo-1768823132559-37639ef3f28a?q=80&w=2070&auto=format&fit=crop',
   ];
 
-  late final List<String> _categories;
+  List<String> _categories = ["All"];
   List<Product> _filteredProducts = [];
+  List<SubCategory> _subCategories = [];
+  SubCategory? _selectedSubCategory;
+  bool _isLoadingCategories = false;
+  bool _isLoadingSubCategories = false;
+  bool _isLoadingProducts = false;
 
   @override
   void initState() {
     super.initState();
-    _categories = ["All", ...DummyData.categories.map((c) => c.name)];
-    _applyFilters();
+    _loadCategories();
     _startAutoScroll();
+    _initializeLocation();
+    _loadBanners();
+  }
+
+  Future<void> _loadBanners() async {
+    try {
+      final banners = await ApiService.fetchBanners();
+      if (banners.isNotEmpty && mounted) {
+        setState(() {
+          _heroImages = banners;
+        });
+      }
+    } catch (e) {
+      print('Failed to load banners: $e');
+    }
+  }
+
+  Future<void> _loadCategories() async {
+    setState(() => _isLoadingCategories = true);
+    try {
+      final cats = await ApiService.fetchCategories();
+      if (cats.isNotEmpty && mounted) {
+        setState(() {
+          DummyData.categories = cats;
+          _categories = ["All", ...cats.map((c) => c.name)];
+        });
+      }
+    } catch (e) {
+      print('Error pre-fetching categories in HomeScreen: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingCategories = false);
+      }
+      _applyFilters();
+    }
+  }
+
+  Future<void> _loadSubCategories(String categoryId) async {
+    setState(() {
+      _isLoadingSubCategories = true;
+    });
+    try {
+      final subCats = await ApiService.fetchSubCategories(categoryId);
+      if (mounted) {
+        setState(() {
+          _subCategories = subCats;
+        });
+      }
+    } catch (e) {
+      print('Error loading subcategories: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingSubCategories = false);
+      }
+    }
+    _applyFilters();
+  }
+
+  Future<void> _loadProductsBySubCategory(String subCategoryId, String categoryName) async {
+    setState(() {
+      _isLoadingProducts = true;
+    });
+    try {
+      final prods = await ApiService.fetchProductsBySubCategory(subCategoryId, categoryName);
+      if (mounted) {
+        setState(() {
+          _filteredProducts = prods;
+        });
+      }
+    } catch (e) {
+      print('Error loading products: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingProducts = false);
+      }
+    }
+  }
+
+  void _selectSubCategory(SubCategory? subCat) {
+    if (_selectedSubCategory == subCat) return;
+    setState(() {
+      _selectedSubCategory = subCat;
+    });
+    
+    if (subCat != null) {
+      _loadProductsBySubCategory(subCat.id, subCat.categoryName);
+    } else {
+      _applyFilters();
+    }
+  }
+
+  Future<void> _initializeLocation() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedLoc = prefs.getString('selected_location');
+
+    if (savedLoc != null && savedLoc.isNotEmpty) {
+      setState(() {
+        _currentLocation = savedLoc;
+      });
+      return;
+    }
+
+    if (DummyData.currentUser.savedAddresses.isNotEmpty) {
+      final address = DummyData.currentUser.savedAddresses.first;
+      final parts = address.split(', ');
+      setState(() {
+        if (parts.length >= 2) {
+          _currentLocation = parts.sublist(parts.length - 2).join(', ');
+        } else {
+          _currentLocation = address;
+        }
+      });
+      // Save it as selected location
+      await prefs.setString('selected_location', _currentLocation);
+    } else {
+      setState(() {
+        _currentLocation = "Select Location";
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _promptLocationSelection();
+      });
+    }
+  }
+
+  Future<void> _promptLocationSelection() async {
+    if (!mounted) return;
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            const LocationSelectionScreen(currentLocation: "Select Location"),
+      ),
+    );
+    if (result != null && result.isNotEmpty && mounted) {
+      setState(() {
+        _currentLocation = result;
+      });
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('selected_location', result);
+    }
   }
 
   @override
@@ -65,10 +212,27 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _selectCategory(String category) {
-    setState(() {
-      _selectedCategory = category;
-    });
-    _applyFilters();
+    if (category == "All") {
+      setState(() {
+        _selectedCategory = "All";
+        _selectedSubCategory = null;
+        _subCategories = [];
+      });
+      _applyFilters();
+    } else {
+      final catObj = DummyData.categories.firstWhere(
+        (c) => c.name.toLowerCase() == category.toLowerCase(),
+        orElse: () => Category(id: '', name: '', icon: '', image: '', productCount: 0),
+      );
+      if (catObj.id.isNotEmpty) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SubCategoriesScreen(category: catObj),
+          ),
+        );
+      }
+    }
   }
 
   void _applyFilters() {
@@ -152,7 +316,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Your next measurement session is in 2 days.',
+            DummyData.orders.any((o) =>
+                    o.status != OrderStatus.delivered &&
+                    o.status != OrderStatus.cancelled)
+                ? 'You have active bespoke orders in progress. Check status below.'
+                : 'Your bespoke tailoring journey. Start by selecting a garment.',
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
@@ -169,8 +337,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isWide ? 40 : 20,
-        vertical: 20,
+        horizontal: isWide ? 30 : 12,
+        vertical: isWide ? 20 : 12,
       ),
       color: Colors.white,
       child: Row(
@@ -234,6 +402,8 @@ class _HomeScreenState extends State<HomeScreen> {
         );
         if (result != null && mounted) {
           setState(() => _currentLocation = result);
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('selected_location', result);
         }
       },
       child: Container(
@@ -282,14 +452,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHeroBanner(bool isWide) {
     return Container(
-      height: isWide ? 300 : 200,
+      height: isWide ? 300 : 150,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(isWide ? 32 : 16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 30,
-            offset: const Offset(0, 15),
+            blurRadius: isWide ? 30 : 15,
+            offset: Offset(0, isWide ? 15 : 8),
           ),
         ],
       ),
@@ -300,13 +470,13 @@ class _HomeScreenState extends State<HomeScreen> {
             onPageChanged: (i) => setState(() => _currentImageIndex = i),
             itemCount: _heroImages.length,
             itemBuilder: (context, index) => ClipRRect(
-              borderRadius: BorderRadius.circular(32),
+              borderRadius: BorderRadius.circular(isWide ? 32 : 16),
               child: Image.network(_heroImages[index], fit: BoxFit.cover),
             ),
           ),
           Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(32),
+              borderRadius: BorderRadius.circular(isWide ? 32 : 16),
               gradient: LinearGradient(
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
@@ -320,9 +490,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Positioned(
-            bottom: 40,
-            left: 40,
-            right: 40,
+            bottom: isWide ? 40 : 12,
+            left: isWide ? 40 : 16,
+            right: isWide ? 40 : 16,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -331,38 +501,39 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
+                        padding: EdgeInsets.symmetric(
+                            horizontal: isWide ? 12 : 8,
+                            vertical: isWide ? 6 : 4),
                         decoration: BoxDecoration(
                           color: const Color(0xFFC9A227),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(isWide ? 8 : 4),
                         ),
-                        child: const Text(
+                        child: Text(
                           'LIMITED EDITION',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 10,
+                            fontSize: isWide ? 10 : 7,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 1,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
+                      SizedBox(height: isWide ? 16 : 6),
+                      Text(
                         "The Masterpiece\nCollection 2024",
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 36,
+                          fontSize: isWide ? 36 : 18,
                           fontWeight: FontWeight.w900,
                           height: 1.1,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: isWide ? 12 : 4),
                       Text(
                         "Experience the pinnacle of bespoke tailoring with our curated premium selection.",
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 16,
+                          fontSize: isWide ? 16 : 10,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -390,16 +561,16 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Positioned(
-            top: 40,
-            right: 40,
+            top: isWide ? 40 : 12,
+            right: isWide ? 40 : 16,
             child: Row(
               children: List.generate(
                 _heroImages.length,
                 (i) => AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
-                  width: _currentImageIndex == i ? 32 : 8,
-                  height: 8,
-                  margin: const EdgeInsets.only(left: 6),
+                  width: _currentImageIndex == i ? (isWide ? 32 : 16) : 6,
+                  height: 6,
+                  margin: const EdgeInsets.only(left: 4),
                   decoration: BoxDecoration(
                     color: _currentImageIndex == i
                         ? const Color(0xFFC9A227)
@@ -428,8 +599,8 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildStatsCard(),
-            const SizedBox(height: 32),
+            //_buildStatsCard(),
+            //const SizedBox(height: 32),
             const Text(
               'Upcoming Schedule',
               style: TextStyle(
@@ -438,20 +609,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Color(0xFF131517)),
             ),
             const SizedBox(height: 20),
-            _buildScheduleItem(
-              'Home Measurement',
-              'Thursday, 24 Oct',
-              '10:30 AM',
-              Icons.straighten_rounded,
-              const Color(0xFFC9A227),
-            ),
-            _buildScheduleItem(
-              'Suit Fitting',
-              'Monday, 28 Oct',
-              '02:00 PM',
-              Icons.checkroom_rounded,
-              const Color(0xFF2E7D32),
-            ),
+            ..._buildDynamicSchedule(),
             const SizedBox(height: 32),
             const Text(
               'Recent Style Inspo',
@@ -470,6 +628,80 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildDynamicSchedule() {
+    final activeOrders = DummyData.orders
+        .where((o) =>
+            o.status != OrderStatus.delivered &&
+            o.status != OrderStatus.cancelled)
+        .toList();
+
+    if (activeOrders.isEmpty) {
+      return [
+        _buildScheduleItem(
+          'Ready to Customise',
+          'Book your first suit',
+          'Coordinate tailor now',
+          Icons.straighten_rounded,
+          const Color(0xFFC9A227),
+        ),
+      ];
+    }
+
+    return activeOrders.map((order) {
+      final itemName = order.items.isNotEmpty
+          ? order.items.first.product.name
+          : 'Garment Bespoke';
+
+      String statusTitle = 'Bespoke Order';
+      String dateInfo = 'Pending tailors';
+      IconData icon = Icons.checkroom_rounded;
+      Color color = const Color(0xFFC9A227);
+
+      switch (order.status) {
+        case OrderStatus.pending:
+          statusTitle = 'Order Placed';
+          dateInfo = 'Awaiting Tailor';
+          icon = Icons.shopping_bag_outlined;
+          color = Colors.blue;
+          break;
+        case OrderStatus.confirmed:
+          statusTitle = 'Tailor Assigned';
+          dateInfo = 'Coordination in progress';
+          icon = Icons.straighten_rounded;
+          color = Colors.orange;
+          break;
+        case OrderStatus.stitching:
+          statusTitle = 'Stitching & Tailoring';
+          dateInfo = 'Master tailor crafting';
+          icon = Icons.checkroom_rounded;
+          color = Colors.purple;
+          break;
+        case OrderStatus.ready:
+          statusTitle = 'Ready to Dispatch';
+          dateInfo = 'Quality check passed';
+          icon = Icons.done_all_rounded;
+          color = Colors.teal;
+          break;
+        case OrderStatus.shipped:
+          statusTitle = 'Shipped & Out';
+          dateInfo = 'Delivery in progress';
+          icon = Icons.local_shipping_rounded;
+          color = Colors.green;
+          break;
+        default:
+          break;
+      }
+
+      return _buildScheduleItem(
+        itemName,
+        '$statusTitle - ${order.orderNumber}',
+        dateInfo,
+        icon,
+        color,
+      );
+    }).toList();
   }
 
   Widget _buildScheduleItem(
@@ -610,16 +842,16 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Shop by Category',
           style: TextStyle(
-              fontSize: 20,
+              fontSize: isWide ? 20 : 16,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF131517)),
+              color: const Color(0xFF131517)),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: isWide ? 20 : 12),
         SizedBox(
-          height: 48,
+          height: isWide ? 48 : 36,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: _categories.length,
@@ -629,12 +861,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () => _selectCategory(_categories[index]),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.only(right: 12),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                  margin: EdgeInsets.only(right: isWide ? 12 : 8),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: isWide ? 28 : 16, vertical: isWide ? 12 : 6),
                   decoration: BoxDecoration(
                     color: isSelected ? const Color(0xFFC9A227) : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(isWide ? 16 : 10),
                     border: Border.all(
                       color: isSelected
                           ? const Color(0xFFC9A227)
@@ -645,8 +877,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             BoxShadow(
                               color: const Color(0xFFC9A227)
                                   .withValues(alpha: 0.2),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
+                              blurRadius: isWide ? 12 : 6,
+                              offset: Offset(0, isWide ? 6 : 3),
                             )
                           ]
                         : [],
@@ -659,7 +891,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             isSelected ? Colors.white : const Color(0xFF4A443F),
                         fontWeight:
                             isSelected ? FontWeight.w800 : FontWeight.w600,
-                        fontSize: 14,
+                        fontSize: isWide ? 14 : 11,
                       ),
                     ),
                   ),
@@ -668,6 +900,70 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
         ),
+        if (_selectedCategory != "All" && (_isLoadingSubCategories || _subCategories.isNotEmpty)) ...[
+          const SizedBox(height: 16),
+          Text(
+            'Sub-categories',
+            style: TextStyle(
+                fontSize: isWide ? 16 : 13,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF4A443F)),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: isWide ? 42 : 32,
+            child: _isLoadingSubCategories
+                ? const Align(
+                    alignment: Alignment.centerLeft,
+                    child: SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFFC9A227),
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _subCategories.length,
+                    itemBuilder: (context, index) {
+                      final subCat = _subCategories[index];
+                      final isSelected = _selectedSubCategory?.id == subCat.id;
+                      final label = subCat.name;
+                      
+                      return GestureDetector(
+                        onTap: () => _selectSubCategory(subCat),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          margin: EdgeInsets.only(right: isWide ? 10 : 6),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: isWide ? 20 : 12, vertical: isWide ? 10 : 5),
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFF131517) : Colors.white,
+                            borderRadius: BorderRadius.circular(isWide ? 12 : 8),
+                            border: Border.all(
+                              color: isSelected
+                                  ? const Color(0xFF131517)
+                                  : const Color(0xFFE9ECEF),
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              label,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : const Color(0xFF4A443F),
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                fontSize: isWide ? 12 : 10,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ]
       ],
     );
   }
@@ -695,19 +991,57 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         const SizedBox(height: 20),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _filteredProducts.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: isWide ? 3 : 2,
-            childAspectRatio: 0.72,
-            mainAxisSpacing: 24,
-            crossAxisSpacing: 24,
-          ),
-          itemBuilder: (context, index) => _buildProductCard(
-              context, _filteredProducts[index], index, isWide),
-        ),
+        _isLoadingProducts
+            ? const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: CircularProgressIndicator(
+                    color: Color(0xFFC9A227),
+                  ),
+                ),
+              )
+            : _filteredProducts.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 60),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.checkroom_rounded,
+                            size: 48,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _selectedCategory == "All"
+                                ? "No products available"
+                                : _selectedSubCategory == null
+                                    ? "Select a sub-category style to view outfits"
+                                    : "No outfits found in this style",
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _filteredProducts.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: isWide ? 3 : 2,
+                      childAspectRatio: 0.72,
+                      mainAxisSpacing: 24,
+                      crossAxisSpacing: 24,
+                    ),
+                    itemBuilder: (context, index) => _buildProductCard(
+                        context, _filteredProducts[index], index, isWide),
+                  ),
         const SizedBox(height: 40),
       ],
     );
@@ -744,6 +1078,9 @@ class _HoverProductCardState extends State<_HoverProductCard> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isWide = size.width > 900;
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
@@ -760,7 +1097,7 @@ class _HoverProductCardState extends State<_HoverProductCard> {
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(isWide ? 24 : 14),
               boxShadow: [
                 BoxShadow(
                   color: _isHovered
@@ -779,17 +1116,17 @@ class _HoverProductCardState extends State<_HoverProductCard> {
                     children: [
                       Positioned.fill(
                         child: ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(24)),
+                          borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(isWide ? 24 : 14)),
                           child: Image.network(widget.product.image,
                               fit: BoxFit.cover),
                         ),
                       ),
                       Positioned(
-                        top: 16,
-                        right: 16,
+                        top: isWide ? 16 : 8,
+                        right: isWide ? 16 : 8,
                         child: Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: EdgeInsets.all(isWide ? 8 : 6),
                           decoration: const BoxDecoration(
                               color: Colors.white, shape: BoxShape.circle),
                           child: Icon(
@@ -799,7 +1136,7 @@ class _HoverProductCardState extends State<_HoverProductCard> {
                             color: widget.product.isFavorite
                                 ? Colors.red
                                 : Colors.grey[400],
-                            size: 20,
+                            size: isWide ? 20 : 15,
                           ),
                         ),
                       ),
@@ -807,7 +1144,7 @@ class _HoverProductCardState extends State<_HoverProductCard> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(isWide ? 16 : 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -815,32 +1152,34 @@ class _HoverProductCardState extends State<_HoverProductCard> {
                         widget.product.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                            color: Color(0xFF131517)),
+                            fontSize: isWide ? 16 : 13,
+                            color: const Color(0xFF131517)),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: isWide ? 8 : 4),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             DummyData.formatPrice(widget.product.price),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w900,
-                              color: Color(0xFFC9A227),
-                              fontSize: 18,
+                              color: const Color(0xFFC9A227),
+                              fontSize: isWide ? 18 : 14,
                             ),
                           ),
                           Row(
                             children: [
-                              const Icon(Icons.star_rounded,
-                                  size: 16, color: Color(0xFFC9A227)),
+                              Icon(Icons.star_rounded,
+                                  size: isWide ? 16 : 12,
+                                  color: const Color(0xFFC9A227)),
                               const SizedBox(width: 4),
                               Text(
                                 widget.product.rating.toString(),
-                                style: const TextStyle(
-                                    fontSize: 14, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    fontSize: isWide ? 14 : 11,
+                                    fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),

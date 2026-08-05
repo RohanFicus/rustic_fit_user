@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/dummy_data.dart';
 import '../services/data_service.dart';
-import '../services/supabase_service.dart';
+import '../services/api_service.dart';
 import 'body_measurements_screen.dart';
 import 'edit_profile_screen.dart';
 import 'mobile_auth_screen.dart';
@@ -371,7 +371,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              await SupabaseService.clearSession();
+              await ApiService.clearSession();
               if (mounted) {
                 Navigator.pushAndRemoveUntil(
                   context,

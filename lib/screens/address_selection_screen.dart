@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/dummy_data.dart';
+import '../services/data_service.dart';
 import 'payment_screen.dart';
+import 'saved_addresses_screen.dart';
 
 class AddressSelectionScreen extends StatefulWidget {
   final Product product;
@@ -27,20 +29,73 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
   static const Color lightCream = Color(0xFFFDFCFB);
   static const Color darkBrown = Color(0xFF131517);
 
-  final List<Map<String, String>> _addresses = [
-    {
-      "type": "Home",
-      "address": "123 Elegance Avenue, Beverly Hills",
-      "city": "Los Angeles, CA 90210",
-      "phone": "+1 (555) 123-4567"
-    },
-    {
-      "type": "Office",
-      "address": "456 Fashion District, Suite 200",
-      "city": "New York, NY 10018",
-      "phone": "+1 (555) 987-6543"
-    },
-  ];
+  List<Map<String, String>> get _addresses {
+    final saved = DummyData.currentUser.savedAddresses;
+    if (saved.isEmpty) return [];
+
+    return saved.asMap().entries.map((entry) {
+      final idx = entry.key;
+      final fullAddr = entry.value;
+      final parts = fullAddr.split(', ');
+
+      String mainAddr = parts.first;
+      String cityState = parts.length > 1 ? parts.sublist(1).join(', ') : '';
+
+      String label = idx == 0 ? 'Home' : (idx == 1 ? 'Office' : 'Location ${idx + 1}');
+
+      return {
+        "type": label,
+        "address": mainAddr,
+        "city": cityState.isNotEmpty ? cityState : 'Default City',
+        "phone": DummyData.currentUser.phone,
+        "full_address": fullAddr,
+      };
+    }).toList();
+  }
+
+  int get selectedIndex {
+    final list = _addresses;
+    if (_selectedAddressIndex >= list.length) {
+      return 0;
+    }
+    return _selectedAddressIndex;
+  }
+
+  void _addNewAddress(bool isWide) {
+    if (isWide) {
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: const AddAddressForm(isDialog: true),
+          ),
+        ),
+      ).then((value) {
+        if (value != null && value is String) {
+          setState(() {
+            DataService().addSavedAddress(value);
+            _selectedAddressIndex = DummyData.currentUser.savedAddresses.length - 1;
+          });
+        }
+      });
+    } else {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => const AddAddressForm(isDialog: false),
+      ).then((value) {
+        if (value != null && value is String) {
+          setState(() {
+            DataService().addSavedAddress(value);
+            _selectedAddressIndex = DummyData.currentUser.savedAddresses.length - 1;
+          });
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -229,7 +284,7 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
 
   Widget _buildAddressCard(int index, bool isWide) {
     final address = _addresses[index];
-    final isSelected = _selectedAddressIndex == index;
+    final isSelected = selectedIndex == index;
 
     return GestureDetector(
       onTap: () => setState(() => _selectedAddressIndex = index),
@@ -309,7 +364,7 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
 
   Widget _buildAddNewCard(bool isWide) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () => _addNewAddress(isWide),
       child: Container(
         height: isWide ? null : 80,
         decoration: BoxDecoration(
@@ -451,19 +506,26 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => PaymentScreen(
-                      product: widget.product,
-                      customFabric: widget.customFabric,
-                      customColor: widget.customColor,
-                      customType: widget.customType,
-                    ),
-                  ),
-                );
-              },
+              onPressed: _addresses.isEmpty
+                  ? null
+                  : () {
+                      final list = _addresses;
+                      final selectedAddrMap = list[selectedIndex];
+                      final fullAddress = selectedAddrMap['full_address'] ??
+                          "${selectedAddrMap['address'] ?? ''}, ${selectedAddrMap['city'] ?? ''}";
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PaymentScreen(
+                            product: widget.product,
+                            customFabric: widget.customFabric,
+                            customColor: widget.customColor,
+                            customType: widget.customType,
+                            deliveryAddress: fullAddress,
+                          ),
+                        ),
+                      );
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryGold,
                 foregroundColor: Colors.white,

@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:http/http.dart' as http;
 
 import 'otp_screen.dart';
 
@@ -30,6 +32,110 @@ class _MobileAuthScreenState extends State<MobileAuthScreen> {
   void dispose() {
     _phoneController.dispose();
     super.dispose();
+  }
+
+  void _requestOtp() async {
+    final mobile = _phoneController.text.trim();
+    if (mobile.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter your phone number'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Show loading spinner
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 3,
+          color: Color(0xFFC9A227),
+        ),
+      ),
+    );
+
+    try {
+      final countryCode = '+${_selectedCountry.phoneCode}';
+      final url = Uri.parse('https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/auth/otp/request');
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+        body: jsonEncode({
+          'mobile': mobile,
+          'countryCode': countryCode,
+        }),
+      );
+
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Dismiss spinner
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        String? requestId;
+        String? apiMessage;
+        bool status = false;
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map<String, dynamic>) {
+            status = decoded['status'] == true;
+            apiMessage = decoded['message']?.toString();
+            if (decoded['data'] is Map && decoded['data'].containsKey('requestId')) {
+              requestId = decoded['data']['requestId']?.toString();
+            }
+          }
+        } catch (e) {
+          print('Error parsing response: $e');
+        }
+
+        if (status && requestId != null) {
+          final phoneNumber = '$countryCode $mobile';
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OtpScreen(
+                phoneNumber: phoneNumber,
+                requestId: requestId,
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(apiMessage ?? 'Failed to request OTP'),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to request OTP: ${response.statusCode} - ${response.body}'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Dismiss spinner
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error requesting OTP: $e'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -303,16 +409,7 @@ class _MobileAuthScreenState extends State<MobileAuthScreen> {
             width: double.infinity,
             height: 58,
             child: ElevatedButton(
-              onPressed: () {
-                final phoneNumber =
-                    '+${_selectedCountry.phoneCode} ${_phoneController.text}';
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => OtpScreen(phoneNumber: phoneNumber),
-                  ),
-                );
-              },
+              onPressed: _requestOtp,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFC9A227),
                 foregroundColor: Colors.white,

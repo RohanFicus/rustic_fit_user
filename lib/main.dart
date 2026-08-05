@@ -2,17 +2,18 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models/dummy_data.dart';
 import 'screens/splash_screen.dart';
-import 'services/supabase_service.dart';
+import 'services/api_service.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Supabase
+  /*
   const supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
     defaultValue: 'https://giethkxggfmfmmxkittu.supabase.co',
@@ -27,20 +28,21 @@ void main() async {
     url: supabaseUrl,
     anonKey: supabaseAnonKey,
   );
+  */
 
-  // Pre-load data from Supabase DB into DummyData memory cache
+  // Pre-load data from API into DummyData memory cache
   try {
-    final dbCategories = await SupabaseService.fetchCategories();
+    final dbCategories = await ApiService.fetchCategories();
     if (dbCategories.isNotEmpty) {
       DummyData.categories = dbCategories;
     }
-    
-    final dbProducts = await SupabaseService.fetchProducts();
+
+    final dbProducts = await ApiService.fetchProducts();
     if (dbProducts.isNotEmpty) {
       DummyData.products = dbProducts;
     }
 
-    final dbLocations = await SupabaseService.fetchLocations();
+    final dbLocations = await ApiService.fetchLocations();
     if (dbLocations.isNotEmpty) {
       DummyData.locations = dbLocations;
     }

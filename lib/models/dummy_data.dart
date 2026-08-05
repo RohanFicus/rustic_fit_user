@@ -27,6 +27,23 @@ class Category {
   });
 }
 
+// SubCategory Model
+class SubCategory {
+  final String id;
+  final String categoryId;
+  final String name;
+  final String image;
+  final String categoryName;
+
+  SubCategory({
+    required this.id,
+    required this.categoryId,
+    required this.name,
+    required this.image,
+    required this.categoryName,
+  });
+}
+
 // Product Model
 class Product {
   final String id;
@@ -132,6 +149,7 @@ class User {
   String email;
   String phone;
   String avatar;
+  String gender;
   List<String> savedAddresses;
   Map<String, String> bodyMeasurements;
   List<Map<String, String>> paymentMethods;
@@ -144,6 +162,7 @@ class User {
     required this.email,
     required this.phone,
     required this.avatar,
+    this.gender = 'MALE',
     required this.savedAddresses,
     required this.bodyMeasurements,
     required this.paymentMethods,
@@ -175,7 +194,6 @@ class Tailor {
 class DummyData {
   // Locations
   static List<String> locations = [
-    /*
     'Faridabad, Haryana',
     'Gurugram, Haryana',
     'New Delhi, Delhi',
@@ -186,192 +204,39 @@ class DummyData {
     'Bangalore, Karnataka',
     'Hyderabad, Telangana',
     'Chennai, Tamil Nadu',
-    */
   ];
 
   // Categories
-  static List<Category> categories = [
-    /*
-    Category(
-      id: '1',
-      name: 'Ethnic Wear',
-      icon: 'checkroom',
-      image:
-          'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=400',
-      productCount: 45,
-    ),
-    Category(
-      id: '2',
-      name: 'Western Wear',
-      icon: 'dry_cleaning',
-      image:
-          'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400',
-      productCount: 32,
-    ),
-    Category(
-      id: '3',
-      name: 'Fusion / Indo-Western',
-      icon: 'styler',
-      image:
-          'https://images.unsplash.com/photo-1617175532323-b138852b9f49?w=400',
-      productCount: 28,
-    ),
-    Category(
-      id: '4',
-      name: 'Bridal & Wedding',
-      icon: 'celebration',
-      image:
-          'https://images.unsplash.com/photo-1594552072238-b8a33785b261?w=400',
-      productCount: 15,
-    ),
-    */
-  ];
+  static List<Category> categories = [];
 
   // Products
-  static List<Product> products = [
-    /*
-    Product(
-      id: '1',
-      name: 'Anarkali Suit',
-      description:
-          'Elegant Anarkali suit with intricate embroidery and perfect fit for special occasions.',
-      category: 'Ethnic Wear',
-      price: 499.0,
-      image:
-          'https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?q=80&w=1364&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-      images: [
-        'https://plus.unsplash.com/premium_photo-1673481601147-ee95199d3896?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-        'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-      ],
-      sizes: ['M', 'L', 'XL', 'XXL'],
-      fabric: 'Georgette with thread & sequins work',
-      color: 'Maroon',
-      type: 'Three-Piece Suit',
-      isReadyToShip: true,
-      deliveryDays: 5,
-      rating: 4.5,
-      reviewCount: 128,
-    ),
-    Product(
-      id: '2',
-      name: 'Classic Sherwani',
-      description:
-          'Traditional sherwani with modern design elements, perfect for weddings and formal events.',
-      category: 'Ethnic Wear',
-      price: 999.0,
-      image:
-          'https://images.unsplash.com/photo-1612336307429-8a898d10e223?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-      images: [
-        'https://images.unsplash.com/photo-1612336307429-8a898d10e223?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-        'https://images.unsplash.com/photo-1496747611176-843222e1e57c?q=80&w=2073&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-      ],
-      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-      fabric: 'Silk blend with zari work',
-      color: 'Beige',
-      type: 'Sherwani Set',
-      isReadyToShip: true,
-      deliveryDays: 7,
-      rating: 4.7,
-      reviewCount: 89,
-    ),
-    Product(
-      id: '3',
-      name: 'Evening Gown',
-      description: 'Stunning evening gown for formal parties and events.',
-      category: 'Western Wear',
-      price: 1299.0,
-      image:
-          'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=400',
-      images: [
-        'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=400',
-      ],
-      sizes: ['S', 'M', 'L', 'XL'],
-      fabric: 'Satin Silk',
-      color: 'Emerald Green',
-      type: 'Full-length Gown',
-      isReadyToShip: true,
-      deliveryDays: 6,
-      rating: 4.8,
-      reviewCount: 45,
-    ),
-    Product(
-      id: '4',
-      name: 'Silk Saree',
-      description:
-          'Premium silk saree with traditional patterns and modern color combinations.',
-      category: 'Ethnic Wear',
-      price: 799.0,
-      image: 'https://picsum.photos/seed/silk-saree/400/500.jpg',
-      images: [
-        'https://picsum.photos/seed/silk-saree/400/500.jpg',
-        'https://picsum.photos/seed/saree-blue/400/500.jpg',
-        'https://picsum.photos/seed/saree-pattern/400/500.jpg',
-      ],
-      sizes: ['One Size'],
-      fabric: 'Silk with stone work',
-      color: 'Royal Blue',
-      type: 'Saree with Unstitched Blouse',
-      isReadyToShip: true,
-      deliveryDays: 6,
-      rating: 4.8,
-      reviewCount: 156,
-    ),
-    Product(
-      id: '5',
-      name: 'Indo-Western Fusion Set',
-      description:
-          'Perfect blend of traditional and modern design, suitable for various occasions.',
-      category: 'Fusion / Indo-Western',
-      price: 1299.0,
-      image: 'https://picsum.photos/seed/indowestern-dress/400/500.jpg',
-      images: [
-        'https://picsum.photos/seed/indowestern-dress/400/500.jpg',
-        'https://picsum.photos/seed/indowestern-black/400/500.jpg',
-        'https://picsum.photos/seed/indowestern-design/400/500.jpg',
-      ],
-      sizes: ['M', 'L', 'XL'],
-      fabric: 'Net with heavy embroidery',
-      color: 'Black',
-      type: 'Fusion Outfit',
-      isReadyToShip: false,
-      deliveryDays: 10,
-      rating: 4.6,
-      reviewCount: 92,
-    ),
-    Product(
-      id: '6',
-      name: 'Bridal Lehenga',
-      description:
-          'Exquisite bridal lehenga with heavy zari work and hand-stitched details.',
-      category: 'Bridal & Wedding',
-      price: 4999.0,
-      image:
-          'https://images.unsplash.com/photo-1594552072238-b8a33785b261?w=400',
-      images: [
-        'https://images.unsplash.com/photo-1594552072238-b8a33785b261?w=400',
-      ],
-      sizes: ['Custom'],
-      fabric: 'Velvet Silk',
-      color: 'Bridal Red',
-      type: 'Heavy Bridal Lehenga',
-      isReadyToShip: false,
-      deliveryDays: 30,
-      rating: 4.9,
-      reviewCount: 34,
-    ),
-    */
-  ];
+  static List<Product> products = [];
 
   // Orders
   static List<Order> orders = [
-    /*
     Order(
       id: '1',
       orderNumber: '#15230',
       orderDate: DateTime(2024, 4, 24),
       items: [
         OrderItem(
-          product: products[0], // Anarkali Suit
+          product: Product(
+            id: '1',
+            name: 'Anarkali Suit',
+            description: 'Elegant Anarkali suit with intricate embroidery',
+            category: 'Ethnic Wear',
+            price: 499.0,
+            image: 'https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?w=400',
+            images: [],
+            sizes: ['M', 'L'],
+            fabric: 'Georgette',
+            color: 'Maroon',
+            type: 'Three-Piece Suit',
+            isReadyToShip: true,
+            deliveryDays: 5,
+            rating: 4.5,
+            reviewCount: 12,
+          ),
           size: 'M',
           quantity: 1,
           price: 499.0,
@@ -392,7 +257,23 @@ class DummyData {
       orderDate: DateTime(2024, 4, 24),
       items: [
         OrderItem(
-          product: products[0], // Anarkali Suit
+          product: Product(
+            id: '1',
+            name: 'Anarkali Suit',
+            description: 'Elegant Anarkali suit with intricate embroidery',
+            category: 'Ethnic Wear',
+            price: 499.0,
+            image: 'https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?w=400',
+            images: [],
+            sizes: ['M', 'L'],
+            fabric: 'Georgette',
+            color: 'Maroon',
+            type: 'Three-Piece Suit',
+            isReadyToShip: true,
+            deliveryDays: 5,
+            rating: 4.5,
+            reviewCount: 12,
+          ),
           size: 'M',
           quantity: 1,
           price: 499.0,
@@ -413,7 +294,23 @@ class DummyData {
       orderDate: DateTime(2024, 2, 9),
       items: [
         OrderItem(
-          product: products[1], // Classic Sherwani
+          product: Product(
+            id: '2',
+            name: 'Classic Sherwani',
+            description: 'Traditional sherwani with modern design elements',
+            category: 'Ethnic Wear',
+            price: 999.0,
+            image: 'https://images.unsplash.com/photo-1612336307429-8a898d10e223?w=400',
+            images: [],
+            sizes: ['S', 'M', 'L'],
+            fabric: 'Silk blend',
+            color: 'Beige',
+            type: 'Sherwani Set',
+            isReadyToShip: true,
+            deliveryDays: 7,
+            rating: 4.7,
+            reviewCount: 89,
+          ),
           size: 'L',
           quantity: 1,
           price: 999.0,
@@ -433,7 +330,23 @@ class DummyData {
       orderDate: DateTime(2024, 3, 15),
       items: [
         OrderItem(
-          product: products[2], // Kids Ethnic Wear
+          product: Product(
+            id: '3',
+            name: 'Evening Gown',
+            description: 'Stunning evening gown for formal parties',
+            category: 'Western Wear',
+            price: 1299.0,
+            image: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=400',
+            images: [],
+            sizes: ['M', 'L'],
+            fabric: 'Net',
+            color: 'Black',
+            type: 'Fusion Outfit',
+            isReadyToShip: false,
+            deliveryDays: 10,
+            rating: 4.6,
+            reviewCount: 92,
+          ),
           size: '4Y',
           quantity: 2,
           price: 699.0,
@@ -446,7 +359,6 @@ class DummyData {
       tailorAddress: '456, Sector 21, Faridabad, Haryana',
       deliveryDate: DateTime(2024, 3, 20),
     ),
-    */
   ];
 
   // User Data
@@ -600,5 +512,125 @@ class DummyData {
 
   static String formatDateTime(DateTime date) {
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  static void resetData() {
+    currentUser = User(
+      id: '1',
+      name: 'Kim',
+      lastName: 'Sharma',
+      dob: '15/05/1995',
+      email: 'kim.sharma@example.com',
+      phone: '+91 9876543210',
+      avatar: 'https://picsum.photos/seed/kim-sharma/200/200.jpg',
+      savedAddresses: [
+        'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
+        '456, Sector 21, Faridabad, Haryana',
+      ],
+      bodyMeasurements: {
+        'chest': '38',
+        'waist': '32',
+        'hips': '40',
+        'shoulder': '16',
+      },
+      paymentMethods: [
+        {
+          "type": "Visa",
+          "number": "**** **** **** 4242",
+          "expiry": "12/26",
+          "holder": "Kim Sharma"
+        },
+        {
+          "type": "MasterCard",
+          "number": "**** **** **** 5555",
+          "expiry": "08/25",
+          "holder": "Kim Sharma"
+        },
+      ],
+    );
+
+    orders = [
+      Order(
+        id: '1',
+        orderNumber: '#15230',
+        orderDate: DateTime(2024, 4, 24),
+        items: [
+          OrderItem(
+            product: products[0],
+            size: 'M',
+            quantity: 1,
+            price: 499.0,
+          ),
+        ],
+        status: OrderStatus.stitching,
+        totalAmount: 499.0,
+        deliveryAddress:
+            'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
+        tailorName: 'Bhandari Tailors',
+        tailorAddress:
+            'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
+        deliveryDate: DateTime(2024, 5, 1),
+      ),
+      Order(
+        id: '2',
+        orderNumber: '#14219',
+        orderDate: DateTime(2024, 4, 24),
+        items: [
+          OrderItem(
+            product: products[0],
+            size: 'M',
+            quantity: 1,
+            price: 499.0,
+          ),
+        ],
+        status: OrderStatus.delivered,
+        totalAmount: 499.0,
+        deliveryAddress:
+            'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
+        tailorName: 'Bhandari Tailors',
+        tailorAddress:
+            'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
+        deliveryDate: DateTime(2024, 4, 29),
+      ),
+      Order(
+        id: '3',
+        orderNumber: '#13207',
+        orderDate: DateTime(2024, 2, 9),
+        items: [
+          OrderItem(
+            product: products[1],
+            size: 'L',
+            quantity: 1,
+            price: 999.0,
+          ),
+        ],
+        status: OrderStatus.cancelled,
+        totalAmount: 999.0,
+        deliveryAddress:
+            'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
+        tailorName: 'Bhandari Tailors',
+        tailorAddress:
+            'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
+      ),
+      Order(
+        id: '4',
+        orderNumber: '#14567',
+        orderDate: DateTime(2024, 3, 15),
+        items: [
+          OrderItem(
+            product: products[2],
+            size: '4Y',
+            quantity: 2,
+            price: 699.0,
+          ),
+        ],
+        status: OrderStatus.shipped,
+        totalAmount: 1398.0,
+        deliveryAddress: '456, Sector 21, Faridabad, Haryana',
+        tailorName: 'Kids Fashion Tailors',
+        tailorAddress: '456, Sector 21, Faridabad, Haryana',
+        deliveryDate: DateTime(2024, 3, 20),
+      ),
+    ];
   }
 }

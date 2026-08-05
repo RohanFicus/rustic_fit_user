@@ -1,17 +1,21 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' hide User;
+import 'package:http/http.dart' as http;
+// import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 
 import '../models/dummy_data.dart';
-import '../services/supabase_service.dart';
+import '../services/api_service.dart';
 import 'main_container.dart';
+import 'profile_setup_screen.dart';
 
 class OtpScreen extends StatefulWidget {
   final String phoneNumber;
+  final String? requestId;
 
-  const OtpScreen({super.key, required this.phoneNumber});
+  const OtpScreen({super.key, required this.phoneNumber, this.requestId});
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -88,10 +92,10 @@ class _OtpScreenState extends State<OtpScreen> {
 
   void _verifyOtp() async {
     final otp = _getOtpCode();
-    if (otp != '123456') {
+    if (otp.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Invalid OTP. Please enter 123456 to bypass.'),
+          content: Text('Please enter a 6-digit OTP'),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
         ),
@@ -111,103 +115,174 @@ class _OtpScreenState extends State<OtpScreen> {
     );
 
     try {
-      final supabase = Supabase.instance.client;
-      final queryPhone = widget.phoneNumber.replaceAll(' ', '');
-      final queryPhoneWithSpace = widget.phoneNumber;
+      // Check for bypass code or missing requestId to run offline mock session
+      if (otp == '123456' || widget.requestId == null) {
+        await ApiService.saveSession(widget.phoneNumber);
+        DummyData.currentUser.phone = widget.phoneNumber;
 
-      // Extract last 10 digits for robust querying in case of varying country code formats
-      final cleanDigits = widget.phoneNumber.replaceAll(RegExp(r'\D'), '');
-      final last10 = cleanDigits.length >= 10
-          ? cleanDigits.substring(cleanDigits.length - 10)
-          : cleanDigits;
-
-      final response = await supabase.from('customers').select().or(
-          'phone.eq.$queryPhone,phone.eq.$queryPhoneWithSpace,phone.like.%$last10');
-
-      if (!mounted) return;
-
-      if (response == null || (response as List).isEmpty) {
+        if (!mounted) return;
         Navigator.of(context).pop(); // Dismiss spinner
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                'No registered customer found for phone: ${widget.phoneNumber}'),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-          ),
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainContainer()),
         );
         return;
       }
 
-      final customerData = (response as List).first as Map<String, dynamic>;
-      final activePhone = customerData['phone'] ?? widget.phoneNumber;
-      await SupabaseService.saveSession(activePhone);
-
-      // Map to User model and update DummyData
-      DummyData.currentUser = User(
-        id: customerData['id']?.toString() ?? '1',
-        name: customerData['name'] ?? 'Unknown Name',
-        lastName: customerData['last_name'] ?? '',
-        dob: customerData['dob'] ?? '15/05/1995',
-        email: customerData['email'] ?? 'unknown@example.com',
-        phone: customerData['phone'] ?? widget.phoneNumber,
-        avatar: customerData['avatar_url'] ??
-            'https://picsum.photos/seed/${customerData['name']}/200/200.jpg',
-        savedAddresses: customerData['saved_addresses'] != null
-            ? List<String>.from(customerData['saved_addresses'] as List)
-            : (customerData['address'] != null &&
-                    customerData['address'].toString().trim().isNotEmpty
-                ? [customerData['address'].toString()]
-                : []),
-        bodyMeasurements: customerData['body_measurements'] != null
-            ? Map<String, String>.from(customerData['body_measurements'] as Map)
-            : {
-                'chest': '38',
-                'waist': '32',
-                'hips': '40',
-                'shoulder': '16',
-              },
-        paymentMethods: customerData['payment_methods'] != null
-            ? (customerData['payment_methods'] as List)
-                .map((item) => Map<String, String>.from(item as Map))
-                .toList()
-            : [
-                {
-                  "type": "Visa",
-                  "number": "**** **** **** 4242",
-                  "expiry": "12/26",
-                  "holder": customerData['name'] ?? 'Kim Sharma'
-                },
-                {
-                  "type": "MasterCard",
-                  "number": "**** **** **** 5555",
-                  "expiry": "08/25",
-                  "holder": customerData['name'] ?? 'Kim Sharma'
-                },
-              ],
+      // Otherwise, hit the real OTP verify API
+      final url = Uri.parse('https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/auth/otp/verify');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+        body: jsonEncode({
+          'requestId': widget.requestId,
+          'otp': otp,
+        }),
       );
 
-      // Fetch orders for this customer from Supabase
-      try {
-        final dbOrders = await SupabaseService.fetchCustomerOrders(customerData['id'].toString());
-        if (dbOrders.isNotEmpty) {
-          DummyData.orders = dbOrders;
-        }
-      } catch (e) {
-        print('Failed to fetch user orders: $e');
-      }
-
+      if (!mounted) return;
       Navigator.of(context).pop(); // Dismiss spinner
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MainContainer()),
-      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = jsonDecode(response.body);
+        if (responseData['status'] == true && responseData['data'] != null) {
+          final userData = responseData['data'];
+          final tokenMeta = responseData['meta']?['token'];
+          final accessToken = tokenMeta?['accessToken']?.toString();
+
+          // Set default user data from verification response as fallback
+          DummyData.currentUser = User(
+            id: userData['id']?.toString() ?? '1',
+            name: userData['email']?.toString().split('@').first ?? 'Super Admin',
+            lastName: '',
+            dob: '15/05/1995',
+            email: userData['email'] ?? 'superadmin@rusticfit.com',
+            phone: '${userData['countryCode'] ?? ''} ${userData['mobile'] ?? ''}'.trim(),
+            avatar: 'https://picsum.photos/seed/${userData['id']}/200/200.jpg',
+            savedAddresses: [
+              'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana'
+            ],
+            bodyMeasurements: {
+              'chest': '38',
+              'waist': '32',
+              'hips': '40',
+              'shoulder': '16',
+            },
+            paymentMethods: [
+              {
+                "type": "Visa",
+                "number": "**** **** **** 4242",
+                "expiry": "12/26",
+                "holder": userData['email']?.toString().split('@').first ?? 'Super Admin'
+              }
+            ],
+          );
+
+          bool profileSet = false;
+
+          // Hit the profile API to fetch full customer profile details
+          try {
+            final profileUrl = Uri.parse('https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/profile');
+            final profileResponse = await http.get(
+              profileUrl,
+              headers: {
+                'Content-Type': 'application/json',
+                if (accessToken != null) 'Authorization': 'Bearer $accessToken',
+                'ngrok-skip-browser-warning': 'true',
+              },
+            );
+
+            if (profileResponse.statusCode == 200 || profileResponse.statusCode == 201) {
+              final profileData = jsonDecode(profileResponse.body);
+              if (profileData['status'] == true && profileData['data']?['customer'] != null) {
+                final customer = profileData['data']['customer'];
+                
+                if (customer['firstName'] != null && customer['firstName'].toString().trim().isNotEmpty) {
+                  profileSet = true;
+                  
+                  // Map the profile details to DummyData.currentUser
+                  DummyData.currentUser = User(
+                    id: customer['id']?.toString() ?? DummyData.currentUser.id,
+                    name: customer['firstName'] ?? 'Customer',
+                    lastName: customer['lastName'] ?? '',
+                    dob: customer['dateOfBirth'] ?? '15/05/1995',
+                    email: customer['email'] ?? 'customer@rusticfit.com',
+                    phone: '${customer['countryCode'] ?? ''} ${customer['mobile'] ?? ''}'.trim(),
+                    avatar: (customer['profileImage'] != null && customer['profileImage'].toString().isNotEmpty)
+                        ? customer['profileImage'].toString()
+                        : 'https://picsum.photos/seed/${customer['id']}/200/200.jpg',
+                    savedAddresses: [
+                      'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana'
+                    ],
+                    bodyMeasurements: {
+                      'chest': '38',
+                      'waist': '32',
+                      'hips': '40',
+                      'shoulder': '16',
+                    },
+                    paymentMethods: [
+                      {
+                        "type": "Visa",
+                        "number": "**** **** **** 4242",
+                        "expiry": "12/26",
+                        "holder": customer['firstName'] ?? 'Customer'
+                      }
+                    ],
+                  );
+                }
+              }
+            }
+          } catch (e) {
+            print('Error fetching customer profile: $e');
+          }
+
+          if (profileSet) {
+            await ApiService.saveSession(DummyData.currentUser.phone, accessToken);
+            if (!mounted) return;
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const MainContainer()),
+            );
+          } else {
+            if (!mounted) return;
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProfileSetupScreen(
+                  accessToken: accessToken ?? '',
+                  phoneNumber: DummyData.currentUser.phone,
+                ),
+              ),
+            );
+          }
+        } else {
+          final message = responseData['message'] ?? 'Failed to verify OTP';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Verification failed: ${response.statusCode} - ${response.body}'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop(); // Dismiss spinner
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error fetching user: $e'),
+            content: Text('Error verifying OTP: $e'),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),

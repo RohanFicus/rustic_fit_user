@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../models/dummy_data.dart';
+import '../services/data_service.dart';
+import '../services/api_service.dart';
 import 'main_container.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -8,6 +10,7 @@ class PaymentScreen extends StatefulWidget {
   final String? customFabric;
   final String? customColor;
   final String? customType;
+  final String deliveryAddress;
 
   const PaymentScreen({
     super.key,
@@ -15,6 +18,7 @@ class PaymentScreen extends StatefulWidget {
     this.customFabric,
     this.customColor,
     this.customType,
+    required this.deliveryAddress,
   });
 
   @override
@@ -433,7 +437,83 @@ class _PaymentScreenState extends State<PaymentScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () => _showSuccessDialog(),
+              onPressed: () async {
+                // Show loading indicator
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(
+                    child: CircularProgressIndicator(color: primaryGold),
+                  ),
+                );
+
+                try {
+                  final customerId = DummyData.currentUser.id;
+                  final amount = widget.product.price;
+                  final itemDetails = "${widget.product.name} - Custom";
+                  final deliveryAddress = widget.deliveryAddress;
+
+                  /*
+                  final success = await ApiService.createOrder(
+                    customerId: customerId,
+                    amount: amount,
+                    itemDetails: itemDetails,
+                    deliveryAddress: deliveryAddress,
+                  );
+                  */
+
+                  // Local mock order creation
+                  final dataService = DataService();
+                  dataService.createOrder(
+                    [
+                      OrderItem(
+                        product: widget.product,
+                        size: widget.product.sizes.isNotEmpty ? widget.product.sizes.first : 'M',
+                        quantity: 1,
+                        price: widget.product.price,
+                      )
+                    ],
+                    widget.deliveryAddress,
+                  );
+                  final success = true;
+
+                  if (mounted) {
+                    Navigator.pop(context); // Dismiss loading indicator
+                  }
+
+                  if (success) {
+                    /*
+                    // Re-fetch customer orders to populate in-memory orders list
+                    final dbOrders = await ApiService.fetchCustomerOrders(customerId);
+                    if (dbOrders.isNotEmpty) {
+                      DummyData.orders = dbOrders;
+                    }
+                    */
+                    _showSuccessDialog();
+                  } else {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Failed to place order. Please try again.'),
+                          backgroundColor: Colors.redAccent,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    Navigator.pop(context); // Dismiss loading indicator
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.redAccent,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryGold,
                 foregroundColor: Colors.white,

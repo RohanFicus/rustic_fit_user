@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/supabase_service.dart';
+import '../services/api_service.dart';
 import 'mobile_auth_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -303,7 +303,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              await SupabaseService.clearSession();
+              await ApiService.clearSession();
               if (mounted) {
                 Navigator.pushAndRemoveUntil(
                   context,

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:rustic_fit/models/dummy_data.dart';
 import 'package:rustic_fit/screens/product_detail_screen.dart';
 
+import '../services/api_service.dart';
+import 'sub_categories_screen.dart';
+
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
 
@@ -10,25 +13,30 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  late String _selectedCategory;
+  String _selectedCategory = "All";
   List<Product> _filteredProducts = [];
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
 
-  late final List<Map<String, dynamic>> _categories;
+  List<Map<String, dynamic>> _categories = [
+    {"name": "All", "icon": Icons.all_inclusive_rounded}
+  ];
+  List<SubCategory> _subCategories = [];
+  SubCategory? _selectedSubCategory;
+  bool _isLoadingSubCategories = false;
+  bool _isLoadingProducts = false;
 
   @override
   void initState() {
     super.initState();
-    _categories = [
-      {"name": "All", "icon": Icons.all_inclusive_rounded},
-      ...DummyData.categories.map((c) => {
-            "name": c.name,
-            "icon": _getIconForCategory(c.name),
-          })
-    ];
-    _selectedCategory = "All";
+    _loadCategories();
     _applyFilters();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   IconData _getIconForCategory(String name) {
@@ -46,17 +54,105 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  Future<void> _loadCategories() async {
+    try {
+      final cats = await ApiService.fetchCategories();
+      if (cats.isNotEmpty && mounted) {
+        setState(() {
+          DummyData.categories = cats;
+          _categories = [
+            {"name": "All", "icon": Icons.all_inclusive_rounded},
+            ...cats.map((c) => {
+                  "name": c.name,
+                  "icon": _getIconForCategory(c.name),
+                })
+          ];
+        });
+      }
+    } catch (e) {
+      print('Error fetching categories in ScheduleScreen: $e');
+    }
+  }
+
+  Future<void> _loadSubCategories(String categoryId) async {
+    setState(() {
+      _isLoadingSubCategories = true;
+    });
+    try {
+      final subCats = await ApiService.fetchSubCategories(categoryId);
+      if (mounted) {
+        setState(() {
+          _subCategories = subCats;
+        });
+      }
+    } catch (e) {
+      print('Error loading subcategories in ScheduleScreen: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingSubCategories = false);
+      }
+    }
+    _applyFilters();
+  }
+
+  Future<void> _loadProductsBySubCategory(
+      String subCategoryId, String categoryName) async {
+    setState(() {
+      _isLoadingProducts = true;
+    });
+    try {
+      final prods = await ApiService.fetchProductsBySubCategory(
+          subCategoryId, categoryName);
+      if (mounted) {
+        setState(() {
+          _filteredProducts = prods;
+        });
+      }
+    } catch (e) {
+      print('Error loading products in ScheduleScreen: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingProducts = false);
+      }
+    }
+  }
+
+  void _selectSubCategory(SubCategory? subCat) {
+    if (_selectedSubCategory == subCat) return;
+    setState(() {
+      _selectedSubCategory = subCat;
+    });
+
+    if (subCat != null) {
+      _loadProductsBySubCategory(subCat.id, subCat.categoryName);
+    } else {
+      _applyFilters();
+    }
   }
 
   void _filterProducts(String category) {
-    setState(() {
-      _selectedCategory = category;
-    });
-    _applyFilters();
+    if (category == "All") {
+      setState(() {
+        _selectedCategory = "All";
+        _selectedSubCategory = null;
+        _subCategories = [];
+      });
+      _applyFilters();
+    } else {
+      final catObj = DummyData.categories.firstWhere(
+        (c) => c.name.toLowerCase() == category.toLowerCase(),
+        orElse: () =>
+            Category(id: '', name: '', icon: '', image: '', productCount: 0),
+      );
+      if (catObj.id.isNotEmpty) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SubCategoriesScreen(category: catObj),
+          ),
+        );
+      }
+    }
   }
 
   void _applyFilters() {
@@ -288,12 +384,103 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             },
           ),
         ),
+        if (_selectedCategory != "All" &&
+            (_isLoadingSubCategories || _subCategories.isNotEmpty)) ...[
+          const SizedBox(height: 24),
+          const Text(
+            'Sub-categories',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF4A443F),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: isWide ? 42 : 32,
+            child: _isLoadingSubCategories
+                ? const Align(
+                    alignment: Alignment.centerLeft,
+                    child: SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFFC9A227),
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _subCategories.length,
+                    itemBuilder: (context, index) {
+                      final subCat = _subCategories[index];
+                      final isSelected = _selectedSubCategory?.id == subCat.id;
+                      final label = subCat.name;
+
+                      return GestureDetector(
+                        onTap: () => _selectSubCategory(subCat),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          margin: const EdgeInsets.only(right: 12),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: isWide ? 20 : 12,
+                              vertical: isWide ? 10 : 5),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xFF131517)
+                                : Colors.white,
+                            borderRadius:
+                                BorderRadius.circular(isWide ? 12 : 8),
+                            border: Border.all(
+                              color: isSelected
+                                  ? const Color(0xFF131517)
+                                  : const Color(0xFFE9ECEF),
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              label,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.white
+                                    : const Color(0xFF4A443F),
+                                fontWeight: isSelected
+                                    ? FontWeight.w800
+                                    : FontWeight.w600,
+                                fontSize: isWide ? 12 : 10,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ]
       ],
     );
   }
 
   Widget _buildStyleGrid(bool isWide) {
+    if (_isLoadingProducts) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 80),
+          child: CircularProgressIndicator(
+            color: Color(0xFFC9A227),
+          ),
+        ),
+      );
+    }
+
     if (_filteredProducts.isEmpty) {
+      final msg = _selectedCategory == "All"
+          ? "No styles found in All"
+          : _selectedSubCategory == null
+              ? "Select a sub-category style to discover outfits"
+              : "No styles found in this sub-category";
+
       return Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 80),
@@ -302,10 +489,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               Icon(Icons.style_outlined, size: 64, color: Colors.grey[300]),
               const SizedBox(height: 24),
               Text(
-                "No styles found in $_selectedCategory",
+                msg,
+                textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Color(0xFF8E847C),
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
               ),

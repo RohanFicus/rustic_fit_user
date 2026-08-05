@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/dummy_data.dart';
 import '../services/data_service.dart';
+import '../services/api_service.dart';
 
 class SavedAddressesScreen extends StatefulWidget {
   const SavedAddressesScreen({super.key});
@@ -17,6 +18,57 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
   static const Color primaryGold = Color(0xFFC9A227);
   static const Color lightCream = Color(0xFFFDFCFB);
   static const Color darkBrown = Color(0xFF131517);
+
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAddresses();
+  }
+
+  Future<void> _fetchAddresses() async {
+    setState(() => _isLoading = true);
+    try {
+      final token = ApiService.accessToken;
+      final url = Uri.parse('https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/profile/addresses');
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+          'ngrok-skip-browser-warning': 'true',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        if (responseData['status'] == true && responseData['data'] is List) {
+          final list = responseData['data'] as List;
+          final List<String> loaded = [];
+          for (var item in list) {
+            final line1 = item['addressLine1'] ?? '';
+            final line2 = item['addressLine2'] ?? '';
+            final city = item['city'] ?? '';
+            final state = item['state'] ?? '';
+            final pincode = item['pincode'] ?? '';
+            
+            final fullAddress = "$line1${line2.isNotEmpty ? ', ' + line2 : ''}, $city, $state $pincode";
+            loaded.add(fullAddress);
+          }
+          setState(() {
+            DummyData.currentUser.savedAddresses = loaded;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching saved addresses: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   void _deleteAddress(int index) {
     setState(() {
@@ -90,8 +142,14 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
               color: darkBrown, fontWeight: FontWeight.w900, fontSize: 18),
         ),
       ),
-      body: DummyData.currentUser.savedAddresses.isEmpty
-          ? _buildEmptyState()
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: primaryGold,
+              ),
+            )
+          : DummyData.currentUser.savedAddresses.isEmpty
+              ? _buildEmptyState()
           : SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               padding: EdgeInsets.all(isWide ? 48 : 24),
@@ -304,6 +362,85 @@ class _AddAddressFormState extends State<AddAddressForm> {
   bool isLoadingStates = false;
   bool isLoadingCities = false;
   bool isLocating = false;
+  bool _isSaving = false;
+
+  void _saveAddress() async {
+    if (_addressController.text.isEmpty ||
+        selectedState == null ||
+        selectedCity == null ||
+        _zipController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields')),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final token = ApiService.accessToken;
+      final customerId = DummyData.currentUser.id;
+
+      final url = Uri.parse('https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/profile/address');
+      
+      final payload = {
+        "customerId": customerId,
+        "addressType": selectedType.toUpperCase(),
+        "addressLine1": _addressController.text.trim(),
+        "addressLine2": _apartmentController.text.trim(),
+        "landmark": "",
+        "city": selectedCity,
+        "state": selectedState,
+        "pincode": _zipController.text.trim(),
+        "latitude": 28.408912,
+        "longitude": 77.317789,
+        "isDefault": DummyData.currentUser.savedAddresses.isEmpty,
+      };
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+          'ngrok-skip-browser-warning': 'true',
+        },
+        body: jsonEncode(payload),
+      );
+
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = jsonDecode(response.body);
+        if (responseData['status'] == true) {
+          final fullAddress =
+              "${_addressController.text}${_apartmentController.text.isNotEmpty ? ', ' + _apartmentController.text : ''}, $selectedCity, $selectedState ${_zipController.text}";
+          
+          Navigator.pop(context, fullAddress);
+        } else {
+          final message = responseData['message'] ?? 'Failed to save address';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save address: ${response.statusCode}'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.redAccent),
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -453,25 +590,25 @@ class _AddAddressFormState extends State<AddAddressForm> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      if (_addressController.text.isNotEmpty &&
-                          selectedState != null &&
-                          selectedCity != null &&
-                          _zipController.text.isNotEmpty) {
-                        final fullAddress =
-                            "${_addressController.text}${_apartmentController.text.isNotEmpty ? ', ' + _apartmentController.text : ''}, $selectedCity, $selectedState ${_zipController.text}";
-                        Navigator.pop(context, fullAddress);
-                      }
-                    },
+                    onPressed: _isSaving ? null : _saveAddress,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryGold,
                       padding: const EdgeInsets.symmetric(vertical: 20),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16)),
                     ),
-                    child: const Text("Save Address",
-                        style: TextStyle(
-                            fontWeight: FontWeight.w900, color: Colors.white)),
+                    child: _isSaving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text("Save Address",
+                            style: TextStyle(
+                                fontWeight: FontWeight.w900, color: Colors.white)),
                   ),
                 ),
               ],
