@@ -1,7 +1,10 @@
+import 'dart:io';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../models/dummy_data.dart';
-import '../services/data_service.dart';
 import '../services/api_service.dart';
 import 'main_container.dart';
 
@@ -11,6 +14,11 @@ class PaymentScreen extends StatefulWidget {
   final String? customColor;
   final String? customType;
   final String deliveryAddress;
+  final String addressId;
+  final String pincode;
+  final String? measurementsJson;
+  final XFile? referenceImage;
+  final String? specialInstruction;
 
   const PaymentScreen({
     super.key,
@@ -19,6 +27,11 @@ class PaymentScreen extends StatefulWidget {
     this.customColor,
     this.customType,
     required this.deliveryAddress,
+    required this.addressId,
+    required this.pincode,
+    this.measurementsJson,
+    this.referenceImage,
+    this.specialInstruction,
   });
 
   @override
@@ -231,16 +244,44 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
+  Widget _buildPlaceholderImage(double width, double height) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            primaryGold.withOpacity(0.04),
+            primaryGold.withOpacity(0.08),
+            darkBrown.withOpacity(0.02),
+          ],
+        ),
+      ),
+      child: const Center(
+        child: Opacity(
+          opacity: 0.15,
+          child: Icon(
+            Icons.checkroom_rounded,
+            size: 32,
+            color: primaryGold,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildOrderSummaryCard(bool isWide) {
     return Container(
       padding: EdgeInsets.all(isWide ? 32 : 24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: const Color(0xFFE9ECEF)),
+        border: Border.all(color: const Color(0xFFF1F3F5), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: Colors.black.withOpacity(0.01),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -259,8 +300,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.network(widget.product.image,
-                    width: 80, height: 100, fit: BoxFit.cover),
+                child: Image.network(
+                  widget.product.image,
+                  width: 80,
+                  height: 100,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(80, 100),
+                ),
               ),
               const SizedBox(width: 20),
               Expanded(
@@ -269,11 +315,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   children: [
                     Text(widget.product.name,
                         style: const TextStyle(
-                            fontWeight: FontWeight.w800, fontSize: 16)),
+                            fontWeight: FontWeight.w900, fontSize: 16, color: darkBrown)),
                     const SizedBox(height: 8),
                     Text(
                       "${widget.customFabric ?? widget.product.fabric} • ${widget.customType ?? widget.product.type}",
-                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                      style: TextStyle(color: Colors.grey[500], fontSize: 13, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -448,47 +494,102 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 );
 
                 try {
-                  final customerId = DummyData.currentUser.id;
-                  final amount = widget.product.price;
-                  final itemDetails = "${widget.product.name} - Custom";
-                  final deliveryAddress = widget.deliveryAddress;
+                  // 1. Fetch serviceLocationId
+                  final serviceLocationId = await ApiService.fetchServiceLocationId(widget.pincode);
 
-                  /*
-                  final success = await ApiService.createOrder(
-                    customerId: customerId,
-                    amount: amount,
-                    itemDetails: itemDetails,
-                    deliveryAddress: deliveryAddress,
+                  // 2. Find sizeId
+                  String sizeId = 'c535b1f2-0fdd-43da-ac7d-bc4b0d6c3ddc'; // Default L sizeId from prompt
+                  final rawSizes = widget.product.rawProductSizes;
+                  if (rawSizes != null && rawSizes.isNotEmpty) {
+                    bool found = false;
+                    for (var sizeMap in rawSizes) {
+                      final code = sizeMap['sizeCode']?.toString().toUpperCase();
+                      if (code == 'L' || code == 'M') {
+                        sizeId = sizeMap['id']?.toString() ?? sizeId;
+                        found = true;
+                        break;
+                      }
+                    }
+                    if (!found && rawSizes.first['id'] != null) {
+                    sizeId = rawSizes.first['id']!.toString();
+                    }
+                  }
+
+                  // 3. Get measurements JSON from widget
+                  final measurementsJson = widget.measurementsJson ?? '[]';
+
+                  // 4. Reference images
+                  final List<XFile> imageFiles = [];
+                  if (widget.referenceImage != null) {
+                    imageFiles.add(widget.referenceImage!);
+                  }
+
+                  // 5. Call API
+                  final responseMap = await ApiService.createOrder(
+                    customerAddressId: widget.addressId.isNotEmpty ? widget.addressId : 'f4669f13-5040-4fb0-af95-5544b2e03917',
+                    productId: widget.product.id,
+                    sizeId: sizeId,
+                    measurementSource: 'CUSTOMER',
+                    specialInstruction: widget.specialInstruction?.isNotEmpty == true 
+                        ? widget.specialInstruction! 
+                        : 'This is testing Order',
+                    measurements: measurementsJson,
+                    imageFiles: imageFiles,
+                    serviceLocationId: serviceLocationId ?? 'dc2027ef-b5ff-4edf-8fb8-f92c5daab801',
                   );
-                  */
 
-                  // Local mock order creation
-                  final dataService = DataService();
-                  dataService.createOrder(
-                    [
+                  bool success = false;
+
+                  if (responseMap != null && responseMap['status'] == true && responseMap['data'] != null) {
+                    final data = responseMap['data'];
+                    final orderId = data['id']?.toString() ?? '';
+                    final orderNumber = data['orderNumber']?.toString() ?? '';
+                    final createdAtRaw = data['createdAt']?.toString() ?? '';
+                    final orderDate = DateTime.tryParse(createdAtRaw) ?? DateTime.now();
+                    final totalAmount = double.tryParse(data['totalAmount']?.toString() ?? '') ?? widget.product.price;
+                    
+                    final estDeliveryRaw = data['estimatedDeliveryDate']?.toString() ?? '';
+                    final deliveryDate = DateTime.tryParse(estDeliveryRaw) ?? orderDate.add(const Duration(days: 10));
+                    
+                    final orderStatusStr = data['orderStatus']?.toString() ?? 'ORDER_CREATED';
+                    OrderStatus orderStatus = OrderStatus.pending;
+                    if (orderStatusStr == 'ORDER_CREATED') {
+                      orderStatus = OrderStatus.pending;
+                    } else if (orderStatusStr.toLowerCase() == 'confirmed') {
+                      orderStatus = OrderStatus.confirmed;
+                    }
+                    
+                    final items = [
                       OrderItem(
                         product: widget.product,
-                        size: widget.product.sizes.isNotEmpty ? widget.product.sizes.first : 'M',
+                        size: data['size']?['sizeCode']?.toString() ?? 'M',
                         quantity: 1,
                         price: widget.product.price,
                       )
-                    ],
-                    widget.deliveryAddress,
-                  );
-                  final success = true;
+                    ];
+                    
+                    final newOrder = Order(
+                      id: orderId,
+                      orderNumber: orderNumber,
+                      orderDate: orderDate,
+                      items: items,
+                      status: orderStatus,
+                      totalAmount: totalAmount,
+                      deliveryAddress: widget.deliveryAddress,
+                      tailorName: 'Bhandari Tailors',
+                      tailorAddress: 'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
+                      deliveryDate: deliveryDate,
+                    );
+                    
+                    DummyData.orders.insert(0, newOrder); // Prepend to the local list
+                    success = true;
+                  }
 
                   if (mounted) {
                     Navigator.pop(context); // Dismiss loading indicator
                   }
 
                   if (success) {
-                    /*
-                    // Re-fetch customer orders to populate in-memory orders list
-                    final dbOrders = await ApiService.fetchCustomerOrders(customerId);
-                    if (dbOrders.isNotEmpty) {
-                      DummyData.orders = dbOrders;
-                    }
-                    */
                     _showSuccessDialog();
                   } else {
                     if (mounted) {

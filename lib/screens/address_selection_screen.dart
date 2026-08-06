@@ -1,6 +1,10 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import '../models/dummy_data.dart';
-import '../services/data_service.dart';
+import '../services/api_service.dart';
 import 'payment_screen.dart';
 import 'saved_addresses_screen.dart';
 
@@ -9,6 +13,9 @@ class AddressSelectionScreen extends StatefulWidget {
   final String? customFabric;
   final String? customColor;
   final String? customType;
+  final String? measurementsJson;
+  final XFile? referenceImage;
+  final String? specialInstruction;
 
   const AddressSelectionScreen({
     super.key,
@@ -16,6 +23,9 @@ class AddressSelectionScreen extends StatefulWidget {
     this.customFabric,
     this.customColor,
     this.customType,
+    this.measurementsJson,
+    this.referenceImage,
+    this.specialInstruction,
   });
 
   @override
@@ -24,31 +34,111 @@ class AddressSelectionScreen extends StatefulWidget {
 
 class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
   int _selectedAddressIndex = 0;
+  List<Map<String, dynamic>> _apiAddresses = [];
+  bool _isLoading = false;
 
   static const Color primaryGold = Color(0xFFC9A227);
   static const Color lightCream = Color(0xFFFDFCFB);
   static const Color darkBrown = Color(0xFF131517);
 
+  @override
+  void initState() {
+    super.initState();
+    _fetchAddresses();
+  }
+
+  Future<void> _fetchAddresses() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    try {
+      final token = ApiService.accessToken;
+      final url = Uri.parse('https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/profile/addresses');
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+          'ngrok-skip-browser-warning': 'true',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        if (responseData['status'] == true && responseData['data'] is List) {
+          final list = responseData['data'] as List;
+          if (mounted) {
+            setState(() {
+              _apiAddresses = List<Map<String, dynamic>>.from(list);
+            });
+          }
+          
+          // Also sync with DummyData.currentUser.savedAddresses
+          final List<String> loaded = [];
+          for (var item in list) {
+            final line1 = item['addressLine1'] ?? '';
+            final line2 = item['addressLine2'] ?? '';
+            final city = item['city'] ?? '';
+            final state = item['state'] ?? '';
+            final pincode = item['pincode'] ?? '';
+            
+            final fullAddress = "$line1${line2.isNotEmpty ? ', ' + line2 : ''}, $city, $state $pincode";
+            loaded.add(fullAddress);
+          }
+          DummyData.currentUser.savedAddresses = loaded;
+        }
+      }
+    } catch (e) {
+      print('Error fetching addresses in selection screen: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   List<Map<String, String>> get _addresses {
-    final saved = DummyData.currentUser.savedAddresses;
-    if (saved.isEmpty) return [];
+    if (_apiAddresses.isEmpty) {
+      final saved = DummyData.currentUser.savedAddresses;
+      if (saved.isEmpty) return [];
 
-    return saved.asMap().entries.map((entry) {
-      final idx = entry.key;
-      final fullAddr = entry.value;
-      final parts = fullAddr.split(', ');
+      return saved.asMap().entries.map((entry) {
+        final idx = entry.key;
+        final fullAddr = entry.value;
+        final parts = fullAddr.split(', ');
 
-      String mainAddr = parts.first;
-      String cityState = parts.length > 1 ? parts.sublist(1).join(', ') : '';
+        String mainAddr = parts.first;
+        String cityState = parts.length > 1 ? parts.sublist(1).join(', ') : '';
 
-      String label = idx == 0 ? 'Home' : (idx == 1 ? 'Office' : 'Location ${idx + 1}');
+        String label = idx == 0 ? 'Home' : (idx == 1 ? 'Office' : 'Location ${idx + 1}');
 
+        return {
+          "id": "",
+          "type": label,
+          "address": mainAddr,
+          "city": cityState.isNotEmpty ? cityState : 'Default City',
+          "phone": DummyData.currentUser.phone,
+          "full_address": fullAddr,
+          "pincode": "",
+        };
+      }).toList();
+    }
+
+    return _apiAddresses.map((item) {
+      final line1 = item['addressLine1']?.toString() ?? '';
+      final line2 = item['addressLine2']?.toString() ?? '';
+      final city = item['city']?.toString() ?? '';
+      final state = item['state']?.toString() ?? '';
+      final pincode = item['pincode']?.toString() ?? '';
+      final fullAddr = "$line1${line2.isNotEmpty ? ', ' + line2 : ''}, $city, $state $pincode";
+      
       return {
-        "type": label,
-        "address": mainAddr,
-        "city": cityState.isNotEmpty ? cityState : 'Default City',
+        "id": item['id']?.toString() ?? '',
+        "type": item['addressType']?.toString() ?? 'Home',
+        "address": line1,
+        "city": "$city, $state",
         "phone": DummyData.currentUser.phone,
         "full_address": fullAddr,
+        "pincode": pincode,
       };
     }).toList();
   }
@@ -74,9 +164,12 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
         ),
       ).then((value) {
         if (value != null && value is String) {
-          setState(() {
-            DataService().addSavedAddress(value);
-            _selectedAddressIndex = DummyData.currentUser.savedAddresses.length - 1;
+          _fetchAddresses().then((_) {
+            if (mounted) {
+              setState(() {
+                _selectedAddressIndex = _apiAddresses.length - 1;
+              });
+            }
           });
         }
       });
@@ -88,9 +181,12 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
         builder: (context) => const AddAddressForm(isDialog: false),
       ).then((value) {
         if (value != null && value is String) {
-          setState(() {
-            DataService().addSavedAddress(value);
-            _selectedAddressIndex = DummyData.currentUser.savedAddresses.length - 1;
+          _fetchAddresses().then((_) {
+            if (mounted) {
+              setState(() {
+                _selectedAddressIndex = _apiAddresses.length - 1;
+              });
+            }
           });
         }
       });
@@ -121,7 +217,9 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
         children: [
           _buildProgressStepper(),
           Expanded(
-            child: isWide ? _buildWideLayout() : _buildMobileLayout(),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: primaryGold))
+                : (isWide ? _buildWideLayout() : _buildMobileLayout()),
           ),
         ],
       ),
@@ -445,13 +543,48 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
     );
   }
 
+  Widget _buildPlaceholderImage(double width, double height) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            primaryGold.withOpacity(0.04),
+            primaryGold.withOpacity(0.08),
+            darkBrown.withOpacity(0.02),
+          ],
+        ),
+      ),
+      child: const Center(
+        child: Opacity(
+          opacity: 0.15,
+          child: Icon(
+            Icons.checkroom_rounded,
+            size: 32,
+            color: primaryGold,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildOrderSummaryCard() {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: const Color(0xFFE9ECEF)),
+        border: Border.all(color: const Color(0xFFF1F3F5), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.01),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          )
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -465,18 +598,24 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.network(widget.product.image, width: 80, height: 100, fit: BoxFit.cover),
+                child: Image.network(
+                  widget.product.image,
+                  width: 80,
+                  height: 100,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(80, 100),
+                ),
               ),
               const SizedBox(width: 20),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(widget.product.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                    Text(widget.product.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: darkBrown)),
                     const SizedBox(height: 8),
                     Text(
                       "${widget.customFabric ?? widget.product.fabric} • ${widget.customType ?? widget.product.type}",
-                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                      style: TextStyle(color: Colors.grey[500], fontSize: 13, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -513,6 +652,8 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
                       final selectedAddrMap = list[selectedIndex];
                       final fullAddress = selectedAddrMap['full_address'] ??
                           "${selectedAddrMap['address'] ?? ''}, ${selectedAddrMap['city'] ?? ''}";
+                      final addressId = selectedAddrMap['id'] ?? '';
+                      final pincode = selectedAddrMap['pincode'] ?? '';
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -522,6 +663,11 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
                             customColor: widget.customColor,
                             customType: widget.customType,
                             deliveryAddress: fullAddress,
+                            addressId: addressId,
+                            pincode: pincode,
+                            measurementsJson: widget.measurementsJson,
+                            referenceImage: widget.referenceImage,
+                            specialInstruction: widget.specialInstruction,
                           ),
                         ),
                       );

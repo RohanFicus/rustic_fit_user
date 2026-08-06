@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:flutter/foundation.dart' hide Category;
+import 'package:image_picker/image_picker.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -103,15 +104,62 @@ class ApiService {
         if (responseData['status'] == true && responseData['data'] is List) {
           final list = responseData['data'] as List;
           return list.map<Product>((item) {
+            final productPriceRaw = item['productPrice'];
+            final stitchingPriceRaw = item['stitchingPrice'];
             final priceRaw = item['price'];
-            double price = 999.0;
-            if (priceRaw != null) {
-              price = double.tryParse(priceRaw.toString()) ?? 999.0;
+            double price = 0.0;
+            if (productPriceRaw != null) {
+              price = double.tryParse(productPriceRaw.toString()) ?? 0.0;
             }
+            if (price == 0.0 && stitchingPriceRaw != null) {
+              price = double.tryParse(stitchingPriceRaw.toString()) ?? 0.0;
+            }
+            if (price == 0.0 && priceRaw != null) {
+              price = double.tryParse(priceRaw.toString()) ?? 0.0;
+            }
+            if (price == 0.0) {
+              price = 999.0;
+            }
+
             final name = item['productName']?.toString() ?? 'Formal Outfits';
-            final desc = item['productDescription']?.toString() ?? 'Bespoke custom outfit';
+            final desc = item['description']?.toString() ?? item['productDescription']?.toString() ?? 'Bespoke custom outfit';
             final img = item['productImage']?.toString() ?? 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400';
             
+            final rawSizes = item['productSize'] is List ? List<Map<String, dynamic>>.from(item['productSize']) : null;
+            final rawMeasurements = item['productMeasurements'] is List ? List<Map<String, dynamic>>.from(item['productMeasurements']) : null;
+            
+            final gallery = item['productImageGallery'] as List?;
+            final List<String> images = [];
+            if (gallery != null) {
+              for (var imgObj in gallery) {
+                final url = imgObj['imageUrl']?.toString();
+                if (url != null && url.isNotEmpty) {
+                  images.add(url);
+                }
+              }
+            }
+            if (images.isEmpty && img.isNotEmpty) {
+              images.add(img);
+            }
+
+            final sizesList = <String>[];
+            if (rawSizes != null) {
+              for (var sizeObj in rawSizes) {
+                final code = sizeObj['sizeCode']?.toString();
+                if (code != null && code.isNotEmpty) {
+                  sizesList.add(code);
+                }
+              }
+            }
+            if (sizesList.isEmpty) {
+              sizesList.addAll(['S', 'M', 'L', 'XL']);
+            }
+
+            final fabric = item['fabricDetails']?.toString() ?? 'Premium';
+            final deliveryDays = item['estimatedDeliveryDays'] is int 
+                ? item['estimatedDeliveryDays'] as int 
+                : (int.tryParse(item['estimatedDeliveryDays']?.toString() ?? '') ?? 7);
+
             return Product(
               id: item['id']?.toString() ?? '',
               name: name,
@@ -119,15 +167,17 @@ class ApiService {
               category: categoryName,
               price: price,
               image: img,
-              images: [img],
-              sizes: ['S', 'M', 'L', 'XL'],
-              fabric: 'Premium',
+              images: images,
+              sizes: sizesList,
+              fabric: fabric,
               color: 'Custom',
               type: 'Stitch',
               isReadyToShip: false,
-              deliveryDays: 7,
+              deliveryDays: deliveryDays,
               rating: 4.8,
               reviewCount: 12,
+              rawProductSizes: rawSizes,
+              rawProductMeasurements: rawMeasurements,
             );
           }).toList();
         }
@@ -160,15 +210,62 @@ class ApiService {
         if (responseData['status'] == true && responseData['data'] is List) {
           final list = responseData['data'] as List;
           return list.map<Product>((item) {
+            final productPriceRaw = item['productPrice'];
+            final stitchingPriceRaw = item['stitchingPrice'];
             final priceRaw = item['price'];
-            double price = 999.0;
-            if (priceRaw != null) {
-              price = double.tryParse(priceRaw.toString()) ?? 999.0;
+            double price = 0.0;
+            if (productPriceRaw != null) {
+              price = double.tryParse(productPriceRaw.toString()) ?? 0.0;
             }
+            if (price == 0.0 && stitchingPriceRaw != null) {
+              price = double.tryParse(stitchingPriceRaw.toString()) ?? 0.0;
+            }
+            if (price == 0.0 && priceRaw != null) {
+              price = double.tryParse(priceRaw.toString()) ?? 0.0;
+            }
+            if (price == 0.0) {
+              price = 999.0;
+            }
+
             final name = item['productName']?.toString() ?? 'Formal Outfits';
-            final desc = item['productDescription']?.toString() ?? 'Bespoke custom outfit';
+            final desc = item['description']?.toString() ?? item['productDescription']?.toString() ?? 'Bespoke custom outfit';
             final img = item['productImage']?.toString() ?? 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400';
             
+            final rawSizes = item['productSize'] is List ? List<Map<String, dynamic>>.from(item['productSize']) : null;
+            final rawMeasurements = item['productMeasurements'] is List ? List<Map<String, dynamic>>.from(item['productMeasurements']) : null;
+            
+            final gallery = item['productImageGallery'] as List?;
+            final List<String> images = [];
+            if (gallery != null) {
+              for (var imgObj in gallery) {
+                final url = imgObj['imageUrl']?.toString();
+                if (url != null && url.isNotEmpty) {
+                  images.add(url);
+                }
+              }
+            }
+            if (images.isEmpty && img.isNotEmpty) {
+              images.add(img);
+            }
+
+            final sizesList = <String>[];
+            if (rawSizes != null) {
+              for (var sizeObj in rawSizes) {
+                final code = sizeObj['sizeCode']?.toString();
+                if (code != null && code.isNotEmpty) {
+                  sizesList.add(code);
+                }
+              }
+            }
+            if (sizesList.isEmpty) {
+              sizesList.addAll(['S', 'M', 'L', 'XL']);
+            }
+
+            final fabric = item['fabricDetails']?.toString() ?? 'Premium';
+            final deliveryDays = item['estimatedDeliveryDays'] is int 
+                ? item['estimatedDeliveryDays'] as int 
+                : (int.tryParse(item['estimatedDeliveryDays']?.toString() ?? '') ?? 7);
+
             return Product(
               id: item['id']?.toString() ?? '',
               name: name,
@@ -176,15 +273,17 @@ class ApiService {
               category: item['categoryName']?.toString() ?? 'Men',
               price: price,
               image: img,
-              images: [img],
-              sizes: ['S', 'M', 'L', 'XL'],
-              fabric: 'Premium',
+              images: images,
+              sizes: sizesList,
+              fabric: fabric,
               color: 'Custom',
               type: 'Stitch',
               isReadyToShip: false,
-              deliveryDays: 7,
+              deliveryDays: deliveryDays,
               rating: 4.8,
               reviewCount: 12,
+              rawProductSizes: rawSizes,
+              rawProductMeasurements: rawMeasurements,
             );
           }).toList();
         }
@@ -477,34 +576,114 @@ class ApiService {
   // ORDER CREATION
   // ==========================================
 
-  static Future<bool> createOrder({
-    required String customerId,
-    required double amount,
-    required String itemDetails,
-    required String deliveryAddress,
-  }) async {
-    /*
+  // ==========================================
+  // ORDER CREATION & SERVICE LOCATIONS
+  // ==========================================
+
+  static Future<String?> fetchServiceLocationId(String pincode) async {
     try {
-      final random = DateTime.now().millisecondsSinceEpoch % 100000;
-      final orderNumber = '#ORD-$random';
-
-      final payload = {
-        'order_number': orderNumber,
-        'customer_id': customerId,
-        'amount': amount,
-        'status': 'pending',
-        'item_details': itemDetails,
-        'delivery_address': deliveryAddress,
-      };
-
-      await _client.from('orders').insert(payload);
-      return true;
+      final token = accessToken;
+      final url = Uri.parse('https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/service-locations');
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+          'ngrok-skip-browser-warning': 'true',
+        },
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == true && data['data'] is List) {
+          final list = data['data'] as List;
+          // Find service location matching pincode
+          for (var item in list) {
+            if (item['pincode']?.toString() == pincode) {
+              return item['id']?.toString();
+            }
+          }
+          // Fallback to first one if pincode not matched
+          if (list.isNotEmpty) {
+            return list.first['id']?.toString();
+          }
+        }
+      }
     } catch (e) {
-      print('Error creating order in Supabase: $e');
-      return false;
+      print('Error fetching service locations: $e');
     }
-    */
-    return true;
+    // Hardcoded fallback from successful response
+    return 'dc2027ef-b5ff-4edf-8fb8-f92c5daab801';
+  }
+
+  static Future<Map<String, dynamic>?> createOrder({
+    required String customerAddressId,
+    required String productId,
+    required String sizeId,
+    required String measurementSource,
+    required String specialInstruction,
+    required String measurements,
+    required List<XFile?> imageFiles,
+    required String serviceLocationId,
+  }) async {
+    try {
+      final token = accessToken;
+      final url = Uri.parse('https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/order');
+      
+      final request = http.MultipartRequest('POST', url);
+      
+      // Headers
+      request.headers.addAll({
+        if (token != null) 'Authorization': 'Bearer $token',
+        'ngrok-skip-browser-warning': 'true',
+      });
+      
+      // Fields
+      request.fields['customerAddressId'] = customerAddressId;
+      request.fields['productId'] = productId;
+      request.fields['sizeId'] = sizeId;
+      request.fields['measurementSource'] = measurementSource;
+      request.fields['specialInstruction'] = specialInstruction;
+      request.fields['measurements'] = measurements;
+      request.fields['serviceLocationId'] = serviceLocationId;
+      
+      // Files
+      for (var fileItem in imageFiles) {
+        if (fileItem != null) {
+          if (kIsWeb) {
+            final bytes = await fileItem.readAsBytes();
+            final multipartFile = http.MultipartFile.fromBytes(
+              'images',
+              bytes,
+              filename: fileItem.name,
+            );
+            request.files.add(multipartFile);
+          } else {
+            final multipartFile = await http.MultipartFile.fromPath(
+              'images',
+              fileItem.path,
+            );
+            request.files.add(multipartFile);
+          }
+        }
+      }
+      
+      print('Sending createOrder request to $url');
+      print('Fields: ${request.fields}');
+      
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      print('createOrder response code: ${response.statusCode}');
+      print('createOrder response body: ${response.body}');
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        return responseData;
+      }
+    } catch (e) {
+      print('Error calling createOrder API: $e');
+    }
+    return null;
   }
 
   // ==========================================

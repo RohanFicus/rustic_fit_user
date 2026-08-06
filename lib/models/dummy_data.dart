@@ -62,6 +62,8 @@ class Product {
   final double rating;
   final int reviewCount;
   bool isFavorite;
+  final List<Map<String, dynamic>>? rawProductSizes;
+  final List<Map<String, dynamic>>? rawProductMeasurements;
 
   Product({
     required this.id,
@@ -80,6 +82,8 @@ class Product {
     required this.rating,
     required this.reviewCount,
     this.isFavorite = false,
+    this.rawProductSizes,
+    this.rawProductMeasurements,
   });
 }
 

@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-
-import '../models/dummy_data.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:http/http.dart' as http;
 
 class LocationSelectionScreen extends StatefulWidget {
   final String currentLocation;
@@ -17,17 +19,11 @@ class LocationSelectionScreen extends StatefulWidget {
 
 class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
   final TextEditingController _searchController = TextEditingController();
-  List<String> _filteredLocations = DummyData.locations;
+  bool _isDetecting = false;
 
   static const Color primaryGold = Color(0xFFC9A227);
   static const Color lightCream = Color(0xFFFDFCFB);
   static const Color darkBrown = Color(0xFF131517);
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(_onSearchChanged);
-  }
 
   @override
   void dispose() {
@@ -35,14 +31,112 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
     super.dispose();
   }
 
-  void _onSearchChanged() {
-    setState(() {
-      _filteredLocations = DummyData.locations
-          .where((location) => location
-              .toLowerCase()
-              .contains(_searchController.text.toLowerCase()))
-          .toList();
-    });
+  Future<void> _getCurrentLocation() async {
+    setState(() => _isDetecting = true);
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw 'Location services are disabled.';
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw 'Location permissions are denied.';
+        }
+      }
+      
+      if (permission == LocationPermission.deniedForever) {
+        throw 'Location permissions are permanently denied, we cannot request permissions.';
+      } 
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      final lat = position.latitude;
+      final lon = position.longitude;
+      String locationStr = '';
+
+      // Try using Nominatim API first, especially for Web compatibility
+      try {
+        final url = Uri.parse('https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lon');
+        final response = await http.get(
+          url,
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'RusticFitApp/1.0',
+          },
+        ).timeout(const Duration(seconds: 5));
+        
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          if (data['address'] != null) {
+            final address = data['address'];
+            final city = address['city'] ?? address['town'] ?? address['village'] ?? address['suburb'] ?? address['county'] ?? '';
+            final state = address['state'] ?? '';
+            
+            if (city.isNotEmpty && state.isNotEmpty) {
+              locationStr = "$city, $state";
+            } else if (city.isNotEmpty) {
+              locationStr = city;
+            } else if (state.isNotEmpty) {
+              locationStr = state;
+            } else {
+              locationStr = address['country'] ?? '';
+            }
+          }
+        }
+      } catch (e) {
+        print('Nominatim reverse geocoding failed: $e');
+      }
+
+      // Fallback to native geocoding plugin (only works on Android/iOS)
+      if (locationStr.isEmpty) {
+        try {
+          final placemarks = await placemarkFromCoordinates(lat, lon);
+          if (placemarks.isNotEmpty) {
+            final placemark = placemarks.first;
+            final city = placemark.locality ?? placemark.subAdministrativeArea ?? '';
+            final state = placemark.administrativeArea ?? '';
+            
+            if (city.isNotEmpty && state.isNotEmpty) {
+              locationStr = "$city, $state";
+            } else if (city.isNotEmpty) {
+              locationStr = city;
+            } else if (state.isNotEmpty) {
+              locationStr = state;
+            } else {
+              locationStr = placemark.country ?? 'Unknown Location';
+            }
+          }
+        } catch (e) {
+          print('Native geocoding failed: $e');
+        }
+      }
+
+      if (locationStr.isNotEmpty) {
+        if (mounted) {
+          Navigator.pop(context, locationStr);
+        }
+      } else {
+        throw 'Could not determine city and state name from GPS coordinates.';
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error detecting location: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isDetecting = false);
+      }
+    }
   }
 
   @override
@@ -96,6 +190,11 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                     const SizedBox(height: 32),
                     TextField(
                       controller: _searchController,
+                      onSubmitted: (val) {
+                        if (val.trim().isNotEmpty) {
+                          Navigator.pop(context, val.trim());
+                        }
+                      },
                       style: const TextStyle(
                           fontWeight: FontWeight.w600, color: darkBrown),
                       decoration: InputDecoration(
@@ -130,14 +229,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                 ),
               ),
               ListTile(
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Detecting your location...'),
-                      backgroundColor: darkBrown,
-                    ),
-                  );
-                },
+                onTap: _isDetecting ? null : _getCurrentLocation,
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                 leading: Container(
@@ -158,61 +250,16 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                 ),
                 subtitle: Text('Detection via GPS',
                     style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                child: Divider(height: 32),
-              ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(24, 8, 24, 16),
-                child: Text(
-                  'POPULAR CITIES',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    color: primaryGold,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: _filteredLocations.length,
-                  itemBuilder: (context, index) {
-                    final location = _filteredLocations[index];
-                    final isSelected = location == widget.currentLocation;
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: ListTile(
-                        onTap: () => Navigator.pop(context, location),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        leading: Icon(Icons.location_on_rounded,
-                            size: 20,
-                            color: isSelected ? primaryGold : Colors.grey[300]),
-                        title: Text(
-                          location,
-                          style: TextStyle(
-                            fontWeight:
-                                isSelected ? FontWeight.w800 : FontWeight.w600,
-                            color: isSelected ? primaryGold : darkBrown,
-                            fontSize: 15,
-                          ),
+                trailing: _isDetecting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor: AlwaysStoppedAnimation<Color>(primaryGold),
                         ),
-                        trailing: isSelected
-                            ? const Icon(Icons.check_circle_rounded,
-                                color: primaryGold, size: 20)
-                            : Icon(Icons.chevron_right_rounded,
-                                color: Colors.grey[300], size: 20),
-                        tileColor: isSelected
-                            ? primaryGold.withValues(alpha: 0.05)
-                            : null,
-                      ),
-                    );
-                  },
-                ),
+                      )
+                    : const Icon(Icons.chevron_right_rounded, color: Colors.grey),
               ),
             ],
           ),

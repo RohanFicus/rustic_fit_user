@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rustic_fit/screens/address_selection_screen.dart';
@@ -32,8 +34,11 @@ class _FittingDetailsScreenState extends State<FittingDetailsScreen> {
   late final TextEditingController _colorController;
   late final TextEditingController _typeController;
 
-  File? _referenceImage;
+  XFile? _referenceImage;
   final ImagePicker _picker = ImagePicker();
+
+  final Map<String, TextEditingController> _dynamicControllers = {};
+  final Map<String, String> _dynamicNames = {};
 
   static const Color primaryGold = Color(0xFFC9A227);
   static const Color lightCream = Color(0xFFFDFCFB);
@@ -49,6 +54,20 @@ class _FittingDetailsScreenState extends State<FittingDetailsScreen> {
     // Prefill from current logged-in user
     _nameController.text = DummyData.currentUser.name;
     _phoneController.text = DummyData.currentUser.phone;
+
+    final rawMeasurements = widget.product.rawProductMeasurements;
+    if (rawMeasurements != null) {
+      for (var item in rawMeasurements) {
+        final name = item['measurementName']?.toString() ?? '';
+        final mId =
+            item['measurementId']?.toString() ?? item['id']?.toString() ?? '';
+        final unit = item['measurementUnit']?.toString() ?? 'INCH';
+        if (name.isNotEmpty && mId.isNotEmpty) {
+          _dynamicControllers[mId] = TextEditingController();
+          _dynamicNames[mId] = "$name ($unit)";
+        }
+      }
+    }
   }
 
   @override
@@ -63,6 +82,7 @@ class _FittingDetailsScreenState extends State<FittingDetailsScreen> {
     _fabricController.dispose();
     _colorController.dispose();
     _typeController.dispose();
+    _dynamicControllers.forEach((_, controller) => controller.dispose());
     super.dispose();
   }
 
@@ -70,7 +90,7 @@ class _FittingDetailsScreenState extends State<FittingDetailsScreen> {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
       setState(() {
-        _referenceImage = File(image.path);
+        _referenceImage = image;
       });
     }
   }
@@ -216,30 +236,12 @@ class _FittingDetailsScreenState extends State<FittingDetailsScreen> {
             _buildSectionHeader("Body Measurements", Icons.straighten_rounded),
             const SizedBox(height: 8),
             Text(
-              "Provide accurate measurements in inches for a perfect bespoke fit.",
+              "Provide accurate measurements for a perfect bespoke fit.",
               style:
                   TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.5),
             ),
             const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                    child: _buildMeasurementField(_chestController, "Chest")),
-                const SizedBox(width: 16),
-                Expanded(
-                    child: _buildMeasurementField(_waistController, "Waist")),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                    child: _buildMeasurementField(_hipsController, "Hips")),
-                const SizedBox(width: 16),
-                Expanded(
-                    child: _buildMeasurementField(_lengthController, "Length")),
-              ],
-            ),
+            _buildMeasurementsWidget(true),
             const SizedBox(height: 40),
             _buildSectionHeader(
                 "Style Customization", Icons.auto_awesome_rounded),
@@ -339,25 +341,7 @@ class _FittingDetailsScreenState extends State<FittingDetailsScreen> {
                   _buildSectionHeader(
                       "Measurement Profile", Icons.straighten_rounded),
                   const SizedBox(height: 32),
-                  Row(
-                    children: [
-                      Expanded(
-                          child: _buildMeasurementField(
-                              _chestController, "Chest")),
-                      const SizedBox(width: 20),
-                      Expanded(
-                          child: _buildMeasurementField(
-                              _waistController, "Waist")),
-                      const SizedBox(width: 20),
-                      Expanded(
-                          child:
-                              _buildMeasurementField(_hipsController, "Hips")),
-                      const SizedBox(width: 20),
-                      Expanded(
-                          child: _buildMeasurementField(
-                              _lengthController, "Length")),
-                    ],
-                  ),
+                  _buildMeasurementsWidget(false),
                   const SizedBox(height: 40),
                   _buildImagePicker(),
                   const SizedBox(height: 32),
@@ -558,10 +542,15 @@ class _FittingDetailsScreenState extends State<FittingDetailsScreen> {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(24),
-                        child: Image.file(_referenceImage!,
-                            width: double.infinity,
-                            height: 160,
-                            fit: BoxFit.cover),
+                        child: kIsWeb
+                            ? Image.network(_referenceImage!.path,
+                                width: double.infinity,
+                                height: 160,
+                                fit: BoxFit.cover)
+                            : Image.file(File(_referenceImage!.path),
+                                width: double.infinity,
+                                height: 160,
+                                fit: BoxFit.cover),
                       ),
                       Positioned(
                         right: 12,
@@ -663,6 +652,104 @@ class _FittingDetailsScreenState extends State<FittingDetailsScreen> {
     );
   }
 
+  Widget _buildMeasurementsWidget(bool isWide) {
+    if (_dynamicControllers.isNotEmpty) {
+      final entries = _dynamicControllers.entries.toList();
+      final List<Widget> rows = [];
+      for (int i = 0; i < entries.length; i += 2) {
+        final left = entries[i];
+        final hasRight = i + 1 < entries.length;
+        final right = hasRight ? entries[i + 1] : null;
+
+        rows.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildMeasurementField(
+                    left.value,
+                    _dynamicNames[left.key] ?? 'Measurement',
+                  ),
+                ),
+                if (hasRight) ...[
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildMeasurementField(
+                      right!.value,
+                      _dynamicNames[right.key] ?? 'Measurement',
+                    ),
+                  ),
+                ] else if (isWide) ...[
+                  const SizedBox(width: 16),
+                  const Spacer(),
+                ],
+              ],
+            ),
+          ),
+        );
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: rows,
+      );
+    } else {
+      if (isWide) {
+        return Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildMeasurementField(
+                        _chestController, "Chest (INCH)")),
+                const SizedBox(width: 16),
+                Expanded(
+                    child: _buildMeasurementField(
+                        _waistController, "Waist (INCH)")),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                    child:
+                        _buildMeasurementField(_hipsController, "Hips (INCH)")),
+                const SizedBox(width: 16),
+                Expanded(
+                    child: _buildMeasurementField(
+                        _lengthController, "Length (INCH)")),
+              ],
+            ),
+          ],
+        );
+      } else {
+        return Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: _buildMeasurementField(_chestController, "Chest")),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildMeasurementField(_waistController, "Waist")),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                    child: _buildMeasurementField(_hipsController, "Hips")),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: _buildMeasurementField(_lengthController, "Length")),
+              ],
+            ),
+          ],
+        );
+      }
+    }
+  }
+
   Widget _buildBottomAction(bool isWide) {
     return Container(
       padding: EdgeInsets.all(isWide ? 0 : 24),
@@ -680,6 +767,75 @@ class _FittingDetailsScreenState extends State<FittingDetailsScreen> {
             child: ElevatedButton(
               onPressed: () {
                 if (_formKey.currentState!.validate()) {
+                  final List<Map<String, dynamic>> measurementsList = [];
+                  if (_dynamicControllers.isNotEmpty) {
+                    _dynamicControllers.forEach((mId, controller) {
+                      if (controller.text.isNotEmpty) {
+                        measurementsList.add({
+                          "measurementId": mId,
+                          "measurementValue": controller.text,
+                          "remarks": "Measured by customer",
+                        });
+                      }
+                    });
+                  } else {
+                    final rawMeasurements =
+                        widget.product.rawProductMeasurements;
+
+                    String getMeasurementId(String name, String fallbackId) {
+                      if (rawMeasurements != null) {
+                        for (var item in rawMeasurements) {
+                          final mName =
+                              item['measurementName']?.toString().toLowerCase();
+                          if (mName != null &&
+                              mName.contains(name.toLowerCase())) {
+                            return item['id']?.toString() ?? fallbackId;
+                          }
+                        }
+                      }
+                      return fallbackId;
+                    }
+
+                    final chestId = getMeasurementId(
+                        'chest', '2d123e8c-bd75-4efb-81f5-7de0db66b38b');
+                    final waistId = getMeasurementId(
+                        'waist', '3d123e8c-bd75-4efb-86ba-7e5135413951');
+                    final hipsId = getMeasurementId(
+                        'hips', '4d123e8c-bd75-4efb-86ba-7e5135413952');
+                    final lengthId = getMeasurementId(
+                        'length', '5d123e8c-bd75-4efb-86ba-7e5135413953');
+
+                    if (_chestController.text.isNotEmpty) {
+                      measurementsList.add({
+                        "measurementId": chestId,
+                        "measurementValue": _chestController.text,
+                        "remarks": "Measured by customer"
+                      });
+                    }
+                    if (_waistController.text.isNotEmpty) {
+                      measurementsList.add({
+                        "measurementId": waistId,
+                        "measurementValue": _waistController.text,
+                        "remarks": "Measured by customer"
+                      });
+                    }
+                    if (_hipsController.text.isNotEmpty) {
+                      measurementsList.add({
+                        "measurementId": hipsId,
+                        "measurementValue": _hipsController.text,
+                        "remarks": "Measured by customer"
+                      });
+                    }
+                    if (_lengthController.text.isNotEmpty) {
+                      measurementsList.add({
+                        "measurementId": lengthId,
+                        "measurementValue": _lengthController.text,
+                        "remarks": "Measured by customer"
+                      });
+                    }
+                  }
+                  final measurementsJson = jsonEncode(measurementsList);
+
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -688,6 +844,9 @@ class _FittingDetailsScreenState extends State<FittingDetailsScreen> {
                         customFabric: _fabricController.text,
                         customColor: _colorController.text,
                         customType: _typeController.text,
+                        measurementsJson: measurementsJson,
+                        referenceImage: _referenceImage,
+                        specialInstruction: _messageController.text,
                       ),
                     ),
                   );

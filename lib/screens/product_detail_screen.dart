@@ -14,7 +14,7 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   static const Color primaryGold = Color(0xFFC9A227);
-  static const Color lightCream = Color(0xFFFDFCFB);
+  static const Color lightCream = Color(0xFFFAF9F6);
   static const Color darkBrown = Color(0xFF131517);
 
   int _selectedImageIndex = 0;
@@ -23,12 +23,62 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // In a real app, we'd have multiple images. For now, we'll repeat the main one.
-    _productImages.addAll([
-      widget.product.image,
-      'https://images.unsplash.com/photo-1594932224828-b4b059b02417?w=800',
-      'https://images.unsplash.com/photo-1598411030247-97d853754988?w=800',
-    ]);
+    // Populate with product's API images
+    if (widget.product.images.isNotEmpty) {
+      _productImages.addAll(widget.product.images);
+    } else if (widget.product.image.isNotEmpty) {
+      _productImages.add(widget.product.image);
+    }
+    
+    // Fallback images if list is empty or small
+    if (_productImages.isEmpty) {
+      _productImages.add('');
+    }
+    while (_productImages.length < 3) {
+      _productImages.addAll([
+        'https://images.unsplash.com/photo-1594932224828-b4b059b02417?w=800',
+        'https://images.unsplash.com/photo-1598411030247-97d853754988?w=800',
+      ]);
+    }
+  }
+
+  Widget _buildPlaceholderImage() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            primaryGold.withOpacity(0.04),
+            primaryGold.withOpacity(0.08),
+            darkBrown.withOpacity(0.02),
+          ],
+        ),
+      ),
+      child: const Center(
+        child: Opacity(
+          opacity: 0.15,
+          child: Icon(
+            Icons.checkroom_rounded,
+            size: 100,
+            color: primaryGold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNetworkImage(String url, {required double width, required double height, required BoxFit fit}) {
+    if (url.isEmpty || (!url.startsWith('http') && !url.startsWith('assets'))) {
+      return _buildPlaceholderImage();
+    }
+    return Image.network(
+      url,
+      width: width,
+      height: height,
+      fit: fit,
+      errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
+    );
   }
 
   @override
@@ -79,9 +129,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               children: [
                 Positioned.fill(
                   child: Hero(
-                    tag: 'product_${widget.product.id}',
-                    child: Image.network(
+                    tag: 'product_image_${widget.product.id}',
+                    child: _buildNetworkImage(
                       _productImages[_selectedImageIndex],
+                      width: double.infinity,
+                      height: double.infinity,
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -144,20 +196,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: Hero(
-          tag: 'product_${widget.product.id}',
+          tag: 'product_image_${widget.product.id}',
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.network(widget.product.image, fit: BoxFit.cover),
+              _buildNetworkImage(
+                widget.product.image,
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.cover,
+              ),
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withValues(alpha: 0.3),
+                      Colors.black.withOpacity(0.3),
                       Colors.transparent,
-                      Colors.black.withValues(alpha: 0.1),
+                      Colors.black.withOpacity(0.1),
                     ],
                   ),
                 ),
@@ -172,11 +229,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget _buildBackButton(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
+        color: Colors.white.withOpacity(0.9),
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 10,
           )
         ],
@@ -192,11 +249,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget _buildFavoriteButton() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
+        color: Colors.white.withOpacity(0.9),
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 10,
           )
         ],
@@ -228,11 +285,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected ? primaryGold : Colors.transparent,
-                width: 2,
+                width: 2.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
+                  color: Colors.black.withOpacity(0.15),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 )
@@ -240,7 +297,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.network(entry.value, fit: BoxFit.cover),
+              child: _buildNetworkImage(
+                entry.value,
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.cover,
+              ),
             ),
           ),
         );
@@ -254,17 +316,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: primaryGold.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
+                    color: primaryGold.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: primaryGold.withOpacity(0.15), width: 1),
                   ),
                   child: Text(
                     widget.product.category.toUpperCase(),
@@ -276,7 +339,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 Text(
                   widget.product.name,
                   style: const TextStyle(
@@ -291,9 +354,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8F9FA),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE9ECEF)),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFF1F3F5), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ],
               ),
               child: Row(
                 children: [
@@ -332,7 +402,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
         const SizedBox(height: 12),
         Text(
-          widget.product.description,
+          widget.product.description.isNotEmpty ? widget.product.description : 'Bespoke custom outfit designed for a perfect fit.',
           style: TextStyle(
             fontSize: 15,
             color: Colors.grey[600],
@@ -366,6 +436,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           "Quality Guaranteed",
           "Triple-checked for stitch perfection and fabric integrity.",
         ),
+        _buildHighlightItem(
+          Icons.local_shipping_rounded,
+          "Estimated Delivery",
+          "Delivered to your doorstep in ${widget.product.deliveryDays} business days.",
+        ),
       ],
     );
   }
@@ -376,10 +451,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE9ECEF)),
+        border: Border.all(color: const Color(0xFFF1F3F5), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: Colors.black.withOpacity(0.02),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -391,8 +466,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           const Text(
             "Garment Specifications",
             style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
               color: darkBrown,
               letterSpacing: 0.5,
             ),
@@ -400,11 +475,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           const SizedBox(height: 24),
           Row(
             children: [
-              Expanded(child: _buildSpecItem("Fabric", widget.product.fabric)),
+              Expanded(child: _buildSpecItem("Fabric", widget.product.fabric.isNotEmpty ? widget.product.fabric : 'Premium')),
               _buildVerticalDivider(),
-              Expanded(child: _buildSpecItem("Color", widget.product.color)),
+              Expanded(child: _buildSpecItem("Color", widget.product.color.isNotEmpty ? widget.product.color : 'Custom')),
               _buildVerticalDivider(),
-              Expanded(child: _buildSpecItem("Type", widget.product.type)),
+              Expanded(child: _buildSpecItem("Type", widget.product.type.isNotEmpty ? widget.product.type : 'Stitch')),
             ],
           ),
         ],
@@ -416,15 +491,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return Column(
       children: [
         Text(
-          label,
+          label.toUpperCase(),
           style: TextStyle(
             color: Colors.grey[400],
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
             letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Text(
           value,
           style: const TextStyle(
@@ -439,27 +514,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _buildVerticalDivider() {
     return Container(
-      height: 30,
-      width: 1,
-      color: const Color(0xFFE9ECEF),
+      height: 32,
+      width: 1.5,
+      color: const Color(0xFFF1F3F5),
     );
   }
 
   Widget _buildHighlightItem(IconData icon, String title, String subtitle) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24.0),
+      padding: const EdgeInsets.only(bottom: 20.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: primaryGold.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
+              color: primaryGold.withOpacity(0.08),
+              shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: primaryGold, size: 22),
+            child: Icon(icon, color: primaryGold, size: 20),
           ),
-          const SizedBox(width: 20),
+          const SizedBox(width: 18),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -495,20 +570,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         isWide ? 0 : 24,
         isWide ? 0 : 16,
         isWide ? 0 : 24,
-        isWide ? 0 : 32,
+        isWide ? 0 : 24,
       ),
       decoration: BoxDecoration(
         color: isWide ? Colors.transparent : Colors.white,
         border: isWide
             ? null
-            : Border(top: BorderSide(color: const Color(0xFFE9ECEF))),
+            : Border(top: BorderSide(color: const Color(0xFFF1F3F5), width: 1.5)),
         boxShadow: isWide
             ? null
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, -10),
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 15,
+                  offset: const Offset(0, -8),
                 ),
               ],
       ),
@@ -558,12 +633,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
-                elevation: 10,
-                shadowColor: primaryGold.withValues(alpha: 0.3),
+                elevation: 0,
               ),
               child: const Text(
                 "Customize & Book Appointment",
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
               ),
             ),
           ),
