@@ -19,6 +19,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   int _selectedImageIndex = 0;
   final List<String> _productImages = [];
+  Map<String, dynamic>? _selectedSize;
 
   @override
   void initState() {
@@ -39,6 +40,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         'https://images.unsplash.com/photo-1594932224828-b4b059b02417?w=800',
         'https://images.unsplash.com/photo-1598411030247-97d853754988?w=800',
       ]);
+    }
+
+    // Initialize selected size
+    if (widget.product.rawProductSizes != null && widget.product.rawProductSizes!.isNotEmpty) {
+      _selectedSize = widget.product.rawProductSizes!.first;
     }
   }
 
@@ -321,23 +327,49 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: primaryGold.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: primaryGold.withOpacity(0.15), width: 1),
-                  ),
-                  child: Text(
-                    widget.product.category.toUpperCase(),
-                    style: const TextStyle(
-                      color: primaryGold,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
-                      fontSize: 10,
+                Row(
+                  children: [
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: primaryGold.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: primaryGold.withOpacity(0.15), width: 1),
+                      ),
+                      child: Text(
+                        widget.product.category.toUpperCase(),
+                        style: const TextStyle(
+                          color: primaryGold,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.5,
+                          fontSize: 10,
+                        ),
+                      ),
                     ),
-                  ),
+                    if (widget.product.subCategoryName != null &&
+                        widget.product.subCategoryName!.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: darkBrown.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: darkBrown.withOpacity(0.1), width: 1),
+                        ),
+                        child: Text(
+                          widget.product.subCategoryName!.toUpperCase(),
+                          style: const TextStyle(
+                            color: darkBrown,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.5,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -391,6 +423,62 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             color: primaryGold,
           ),
         ),
+        if (widget.product.rawProductSizes != null && widget.product.rawProductSizes!.isNotEmpty) ...[
+          const SizedBox(height: 32),
+          const Text(
+            "Select Size",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: darkBrown,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: widget.product.rawProductSizes!.map((sizeObj) {
+              final sizeCode = sizeObj['sizeCode']?.toString() ?? '';
+              final isSelected = _selectedSize != null && _selectedSize!['id'] == sizeObj['id'];
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedSize = sizeObj;
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isSelected ? primaryGold : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? primaryGold : const Color(0xFFE9ECEF),
+                      width: 1.5,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: primaryGold.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            )
+                          ]
+                        : null,
+                  ),
+                  child: Text(
+                    sizeCode,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : darkBrown,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
         const SizedBox(height: 32),
         const Text(
           "Description",
@@ -622,7 +710,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (context) =>
-                        FittingDetailsScreen(product: widget.product),
+                        FittingDetailsScreen(
+                          product: widget.product,
+                          selectedSize: _selectedSize,
+                        ),
                   ),
                 );
               },

@@ -50,6 +50,7 @@ class Product {
   final String name;
   final String description;
   final String category;
+  final String? subCategoryName;
   final double price;
   final String image;
   final List<String> images;
@@ -70,6 +71,7 @@ class Product {
     required this.name,
     required this.description,
     required this.category,
+    this.subCategoryName,
     required this.price,
     required this.image,
     required this.images,
@@ -217,153 +219,7 @@ class DummyData {
   static List<Product> products = [];
 
   // Orders
-  static List<Order> orders = [
-    Order(
-      id: '1',
-      orderNumber: '#15230',
-      orderDate: DateTime(2024, 4, 24),
-      items: [
-        OrderItem(
-          product: Product(
-            id: '1',
-            name: 'Anarkali Suit',
-            description: 'Elegant Anarkali suit with intricate embroidery',
-            category: 'Ethnic Wear',
-            price: 499.0,
-            image: 'https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?w=400',
-            images: [],
-            sizes: ['M', 'L'],
-            fabric: 'Georgette',
-            color: 'Maroon',
-            type: 'Three-Piece Suit',
-            isReadyToShip: true,
-            deliveryDays: 5,
-            rating: 4.5,
-            reviewCount: 12,
-          ),
-          size: 'M',
-          quantity: 1,
-          price: 499.0,
-        ),
-      ],
-      status: OrderStatus.stitching,
-      totalAmount: 499.0,
-      deliveryAddress:
-          'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
-      tailorName: 'Bhandari Tailors',
-      tailorAddress:
-          'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
-      deliveryDate: DateTime(2024, 5, 1),
-    ),
-    Order(
-      id: '2',
-      orderNumber: '#14219',
-      orderDate: DateTime(2024, 4, 24),
-      items: [
-        OrderItem(
-          product: Product(
-            id: '1',
-            name: 'Anarkali Suit',
-            description: 'Elegant Anarkali suit with intricate embroidery',
-            category: 'Ethnic Wear',
-            price: 499.0,
-            image: 'https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?w=400',
-            images: [],
-            sizes: ['M', 'L'],
-            fabric: 'Georgette',
-            color: 'Maroon',
-            type: 'Three-Piece Suit',
-            isReadyToShip: true,
-            deliveryDays: 5,
-            rating: 4.5,
-            reviewCount: 12,
-          ),
-          size: 'M',
-          quantity: 1,
-          price: 499.0,
-        ),
-      ],
-      status: OrderStatus.delivered,
-      totalAmount: 499.0,
-      deliveryAddress:
-          'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
-      tailorName: 'Bhandari Tailors',
-      tailorAddress:
-          'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
-      deliveryDate: DateTime(2024, 4, 29),
-    ),
-    Order(
-      id: '3',
-      orderNumber: '#13207',
-      orderDate: DateTime(2024, 2, 9),
-      items: [
-        OrderItem(
-          product: Product(
-            id: '2',
-            name: 'Classic Sherwani',
-            description: 'Traditional sherwani with modern design elements',
-            category: 'Ethnic Wear',
-            price: 999.0,
-            image: 'https://images.unsplash.com/photo-1612336307429-8a898d10e223?w=400',
-            images: [],
-            sizes: ['S', 'M', 'L'],
-            fabric: 'Silk blend',
-            color: 'Beige',
-            type: 'Sherwani Set',
-            isReadyToShip: true,
-            deliveryDays: 7,
-            rating: 4.7,
-            reviewCount: 89,
-          ),
-          size: 'L',
-          quantity: 1,
-          price: 999.0,
-        ),
-      ],
-      status: OrderStatus.cancelled,
-      totalAmount: 999.0,
-      deliveryAddress:
-          'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
-      tailorName: 'Bhandari Tailors',
-      tailorAddress:
-          'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
-    ),
-    Order(
-      id: '4',
-      orderNumber: '#14567',
-      orderDate: DateTime(2024, 3, 15),
-      items: [
-        OrderItem(
-          product: Product(
-            id: '3',
-            name: 'Evening Gown',
-            description: 'Stunning evening gown for formal parties',
-            category: 'Western Wear',
-            price: 1299.0,
-            image: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=400',
-            images: [],
-            sizes: ['M', 'L'],
-            fabric: 'Net',
-            color: 'Black',
-            type: 'Fusion Outfit',
-            isReadyToShip: false,
-            deliveryDays: 10,
-            rating: 4.6,
-            reviewCount: 92,
-          ),
-          size: '4Y',
-          quantity: 2,
-          price: 699.0,
-        ),
-      ],
-      status: OrderStatus.shipped,
-      totalAmount: 1398.0,
-      deliveryAddress: '456, Sector 21, Faridabad, Haryana',
-      tailorName: 'Kids Fashion Tailors',
-      tailorAddress: '456, Sector 21, Faridabad, Haryana',
-      deliveryDate: DateTime(2024, 3, 20),
-    ),
-  ];
+  static List<Order> orders = [];
 
   // User Data
   static User currentUser = User(
@@ -553,88 +409,6 @@ class DummyData {
       ],
     );
 
-    orders = [
-      Order(
-        id: '1',
-        orderNumber: '#15230',
-        orderDate: DateTime(2024, 4, 24),
-        items: [
-          OrderItem(
-            product: products[0],
-            size: 'M',
-            quantity: 1,
-            price: 499.0,
-          ),
-        ],
-        status: OrderStatus.stitching,
-        totalAmount: 499.0,
-        deliveryAddress:
-            'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
-        tailorName: 'Bhandari Tailors',
-        tailorAddress:
-            'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
-        deliveryDate: DateTime(2024, 5, 1),
-      ),
-      Order(
-        id: '2',
-        orderNumber: '#14219',
-        orderDate: DateTime(2024, 4, 24),
-        items: [
-          OrderItem(
-            product: products[0],
-            size: 'M',
-            quantity: 1,
-            price: 499.0,
-          ),
-        ],
-        status: OrderStatus.delivered,
-        totalAmount: 499.0,
-        deliveryAddress:
-            'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
-        tailorName: 'Bhandari Tailors',
-        tailorAddress:
-            'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
-        deliveryDate: DateTime(2024, 4, 29),
-      ),
-      Order(
-        id: '3',
-        orderNumber: '#13207',
-        orderDate: DateTime(2024, 2, 9),
-        items: [
-          OrderItem(
-            product: products[1],
-            size: 'L',
-            quantity: 1,
-            price: 999.0,
-          ),
-        ],
-        status: OrderStatus.cancelled,
-        totalAmount: 999.0,
-        deliveryAddress:
-            'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
-        tailorName: 'Bhandari Tailors',
-        tailorAddress:
-            'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
-      ),
-      Order(
-        id: '4',
-        orderNumber: '#14567',
-        orderDate: DateTime(2024, 3, 15),
-        items: [
-          OrderItem(
-            product: products[2],
-            size: '4Y',
-            quantity: 2,
-            price: 699.0,
-          ),
-        ],
-        status: OrderStatus.shipped,
-        totalAmount: 1398.0,
-        deliveryAddress: '456, Sector 21, Faridabad, Haryana',
-        tailorName: 'Kids Fashion Tailors',
-        tailorAddress: '456, Sector 21, Faridabad, Haryana',
-        deliveryDate: DateTime(2024, 3, 20),
-      ),
-    ];
+    orders = [];
   }
 }

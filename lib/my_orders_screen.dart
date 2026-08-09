@@ -4,6 +4,7 @@ import 'models/dummy_data.dart';
 import 'screens/home_screen.dart';
 import 'screens/order_detail_screen.dart';
 import 'services/data_service.dart';
+import 'services/api_service.dart';
 
 class MyOrdersScreen extends StatefulWidget {
   const MyOrdersScreen({super.key});
@@ -15,6 +16,38 @@ class MyOrdersScreen extends StatefulWidget {
 class _MyOrdersScreenState extends State<MyOrdersScreen> {
   String _selectedFilter = "Active";
   final List<String> _filters = ["All", "Active", "Completed", "Cancelled"];
+
+  List<Order> _apiOrders = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOrders();
+  }
+
+  Future<void> _loadOrders() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final orders = await ApiService.fetchCustomerOrders(DummyData.currentUser.id);
+      if (!mounted) return;
+      setState(() {
+        _apiOrders = orders;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Failed to load orders: $e';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -170,6 +203,16 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   }
 
   Widget _buildSummaryCard() {
+    final activeCount = _apiOrders
+        .where((order) =>
+            order.status != OrderStatus.delivered &&
+            order.status != OrderStatus.cancelled)
+        .length;
+    final deliveredCount =
+        _apiOrders.where((order) => order.status == OrderStatus.delivered).length;
+    final totalSpent = _apiOrders.fold<double>(
+        0.0, (sum, order) => sum + order.totalAmount);
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -195,9 +238,9 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          _buildStatRow('Active Orders', '2', const Color(0xFFC9A227)),
-          _buildStatRow('Delivered', '12', Colors.green),
-          _buildStatRow('Total Spent', '₹1,24,500', Colors.white70),
+          _buildStatRow('Active Orders', activeCount.toString(), const Color(0xFFC9A227)),
+          _buildStatRow('Delivered', deliveredCount.toString(), Colors.green),
+          _buildStatRow('Total Spent', DummyData.formatPrice(totalSpent), Colors.white70),
           const Divider(color: Colors.white10, height: 32),
           const Text(
             'Your items usually arrive in 8-10 days after measurement.',
@@ -270,8 +313,28 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   }
 
   Widget _buildDynamicOrdersList(bool isWide) {
-    final dataService = DataService();
-    List<Order> allOrders = dataService.getOrders();
+    if (_isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 40),
+          child: CircularProgressIndicator(color: Color(0xFFC9A227)),
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: Text(
+            _errorMessage!,
+            style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+          ),
+        ),
+      );
+    }
+
+    List<Order> allOrders = _apiOrders;
 
     List<Order> filteredOrders = _selectedFilter == "All"
         ? allOrders

@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-// import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 
 import '../models/dummy_data.dart';
 import '../services/api_service.dart';
@@ -29,6 +29,9 @@ class _OtpScreenState extends State<OtpScreen> {
   int _resendTimer = 30;
   bool _canResend = false;
   Timer? _timer;
+
+  static const Color primaryGold = Color(0xFFC9A227);
+  static const Color darkBrown = Color(0xFF131517);
 
   @override
   void initState() {
@@ -130,7 +133,8 @@ class _OtpScreenState extends State<OtpScreen> {
       }
 
       // Otherwise, hit the real OTP verify API
-      final url = Uri.parse('https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/auth/otp/verify');
+      final url = Uri.parse(
+          'https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/auth/otp/verify');
       final response = await http.post(
         url,
         headers: {
@@ -156,11 +160,14 @@ class _OtpScreenState extends State<OtpScreen> {
           // Set default user data from verification response as fallback
           DummyData.currentUser = User(
             id: userData['id']?.toString() ?? '1',
-            name: userData['email']?.toString().split('@').first ?? 'Super Admin',
+            name:
+                userData['email']?.toString().split('@').first ?? 'Super Admin',
             lastName: '',
             dob: '15/05/1995',
             email: userData['email'] ?? 'superadmin@rusticfit.com',
-            phone: '${userData['countryCode'] ?? ''} ${userData['mobile'] ?? ''}'.trim(),
+            phone:
+                '${userData['countryCode'] ?? ''} ${userData['mobile'] ?? ''}'
+                    .trim(),
             avatar: 'https://picsum.photos/seed/${userData['id']}/200/200.jpg',
             savedAddresses: [
               'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana'
@@ -176,7 +183,8 @@ class _OtpScreenState extends State<OtpScreen> {
                 "type": "Visa",
                 "number": "**** **** **** 4242",
                 "expiry": "12/26",
-                "holder": userData['email']?.toString().split('@').first ?? 'Super Admin'
+                "holder": userData['email']?.toString().split('@').first ??
+                    'Super Admin'
               }
             ],
           );
@@ -185,7 +193,8 @@ class _OtpScreenState extends State<OtpScreen> {
 
           // Hit the profile API to fetch full customer profile details
           try {
-            final profileUrl = Uri.parse('https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/profile');
+            final profileUrl = Uri.parse(
+                'https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/profile');
             final profileResponse = await http.get(
               profileUrl,
               headers: {
@@ -195,14 +204,20 @@ class _OtpScreenState extends State<OtpScreen> {
               },
             );
 
-            if (profileResponse.statusCode == 200 || profileResponse.statusCode == 201) {
+            if (profileResponse.statusCode == 200 ||
+                profileResponse.statusCode == 201) {
               final profileData = jsonDecode(profileResponse.body);
-              if (profileData['status'] == true && profileData['data']?['customer'] != null) {
-                final customer = profileData['data']['customer'];
-                
-                if (customer['firstName'] != null && customer['firstName'].toString().trim().isNotEmpty) {
+              if (profileData['status'] == true && profileData['data'] != null) {
+                final rawData = profileData['data'];
+                final customer = (rawData is Map && rawData.containsKey('customer'))
+                    ? rawData['customer']
+                    : rawData;
+
+                if (customer != null &&
+                    customer['firstName'] != null &&
+                    customer['firstName'].toString().trim().isNotEmpty) {
                   profileSet = true;
-                  
+
                   // Map the profile details to DummyData.currentUser
                   DummyData.currentUser = User(
                     id: customer['id']?.toString() ?? DummyData.currentUser.id,
@@ -210,8 +225,11 @@ class _OtpScreenState extends State<OtpScreen> {
                     lastName: customer['lastName'] ?? '',
                     dob: customer['dateOfBirth'] ?? '15/05/1995',
                     email: customer['email'] ?? 'customer@rusticfit.com',
-                    phone: '${customer['countryCode'] ?? ''} ${customer['mobile'] ?? ''}'.trim(),
-                    avatar: (customer['profileImage'] != null && customer['profileImage'].toString().isNotEmpty)
+                    phone:
+                        '${customer['countryCode'] ?? ''} ${customer['mobile'] ?? ''}'
+                            .trim(),
+                    avatar: (customer['profileImage'] != null &&
+                            customer['profileImage'].toString().isNotEmpty)
                         ? customer['profileImage'].toString()
                         : 'https://picsum.photos/seed/${customer['id']}/200/200.jpg',
                     savedAddresses: [
@@ -240,7 +258,8 @@ class _OtpScreenState extends State<OtpScreen> {
           }
 
           if (profileSet) {
-            await ApiService.saveSession(DummyData.currentUser.phone, accessToken);
+            await ApiService.saveSession(
+                DummyData.currentUser.phone, accessToken);
             if (!mounted) return;
             Navigator.pushReplacement(
               context,
@@ -271,7 +290,8 @@ class _OtpScreenState extends State<OtpScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Verification failed: ${response.statusCode} - ${response.body}'),
+            content: Text(
+                'Verification failed: ${response.statusCode} - ${response.body}'),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),
@@ -315,117 +335,137 @@ class _OtpScreenState extends State<OtpScreen> {
     final isWide = size.width > 900;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(isWide ? 40 : 16),
-          child: Container(
-            width: isWide ? 1000 : double.infinity,
-            height: isWide ? 650 : null,
+      backgroundColor: darkBrown,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background Image with dark overlay
+          Image.asset(
+            'assets/images/banners/banner_1.png',
+            fit: BoxFit.cover,
+          ),
+          Container(
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 30,
-                  offset: const Offset(0, 15),
-                ),
-                BoxShadow(
-                  color: const Color(0xFFC9A227).withValues(alpha: 0.05),
-                  blurRadius: 40,
-                  offset: const Offset(0, 20),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: isWide
-                  ? Row(
-                      children: [
-                        Expanded(child: _buildDecorativeSide()),
-                        Expanded(child: _buildFormSide()),
-                      ],
-                    )
-                  : Column(
-                      children: [
-                        _buildDecorativeSide(height: 300),
-                        _buildFormSide(),
-                      ],
-                    ),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.7),
+                  Colors.black.withValues(alpha: 0.8),
+                  darkBrown,
+                ],
+              ),
             ),
           ),
-        ),
+
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isWide ? 1000 : 450,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(32),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(32),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          width: 1,
+                        ),
+                      ),
+                      child: isWide
+                          ? Row(
+                              children: [
+                                Expanded(child: _buildDecorativeSide()),
+                                Expanded(child: _buildFormSide()),
+                              ],
+                            )
+                          : Column(
+                              children: [
+                                _buildDecorativeSide(height: 250),
+                                _buildFormSide(),
+                              ],
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildDecorativeSide({double? height}) {
     return Container(
-      height: height ?? double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFC9A227),
-            Color(0xFFD4AF37),
-          ],
+      height: height ?? 650,
+      padding: const EdgeInsets.all(48),
+      decoration: BoxDecoration(
+        color: primaryGold.withValues(alpha: 0.1),
+        border: Border(
+          right: height == null
+              ? BorderSide(color: Colors.white.withValues(alpha: 0.1))
+              : BorderSide.none,
+          bottom: height != null
+              ? BorderSide(color: Colors.white.withValues(alpha: 0.1))
+              : BorderSide.none,
         ),
       ),
-      padding: const EdgeInsets.all(48),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            'Secure Your\nAccount',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-              height: 1.2,
-              shadows: [
-                Shadow(
-                  color: Colors.black26,
-                  offset: Offset(0, 2),
-                  blurRadius: 4,
-                ),
-              ],
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.3),
+              shape: BoxShape.circle,
+              border: Border.all(color: primaryGold.withValues(alpha: 0.3)),
+            ),
+            child: Icon(
+              Icons.shield_outlined,
+              size: height != null ? 60 : 120,
+              color: primaryGold,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
           const Text(
+            'SECURE YOUR ACCOUNT',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
             'We have sent a 6-digit verification code to your WhatsApp.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              height: 1.5,
+              color: primaryGold.withValues(alpha: 0.7),
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 2,
             ),
           ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+          if (height == null) ...[
+            const Spacer(),
+            Text(
+              'Your safety and data privacy is our priority.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 14,
+                height: 1.6,
+              ),
             ),
-            child: const Icon(
-              Icons.shield_outlined,
-              size: 80,
-              color: Color(0xFFC9A227),
-            ),
-          ),
-          const Spacer(),
+          ],
         ],
       ),
     );
@@ -433,7 +473,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
   Widget _buildFormSide() {
     return Padding(
-      padding: const EdgeInsets.all(48),
+      padding: const EdgeInsets.all(40),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -443,15 +483,15 @@ class _OtpScreenState extends State<OtpScreen> {
             icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
-            color: const Color(0xFFC9A227),
+            color: primaryGold,
           ),
           const SizedBox(height: 32),
           const Text(
             'Verification',
             style: TextStyle(
               fontSize: 32,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF2D2926),
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
               letterSpacing: -0.5,
             ),
           ),
@@ -459,8 +499,8 @@ class _OtpScreenState extends State<OtpScreen> {
           Text(
             'Code sent to ${widget.phoneNumber}',
             style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
+              fontSize: 14,
+              color: Colors.white.withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(height: 48),
@@ -483,20 +523,22 @@ class _OtpScreenState extends State<OtpScreen> {
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF2D2926),
+                    color: Colors.white,
                   ),
                   decoration: InputDecoration(
                     counterText: '',
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Colors.white.withValues(alpha: 0.05),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE9ECEF)),
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                          color: Color(0xFFC9A227), width: 1.5),
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide:
+                          const BorderSide(color: primaryGold, width: 1.5),
                     ),
                     contentPadding: EdgeInsets.zero,
                   ),
@@ -508,24 +550,25 @@ class _OtpScreenState extends State<OtpScreen> {
           const SizedBox(height: 40),
           SizedBox(
             width: double.infinity,
-            height: 56,
+            height: 64,
             child: ElevatedButton(
               onPressed: _getOtpCode().length == 6 ? _verifyOtp : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFC9A227),
-                foregroundColor: Colors.white,
-                elevation: 4,
-                shadowColor: const Color(0xFFC9A227).withValues(alpha: 0.3),
+                backgroundColor: primaryGold,
+                foregroundColor: Colors.black,
+                elevation: 0,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                disabledBackgroundColor: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(20)),
+                disabledBackgroundColor: Colors.white.withValues(alpha: 0.05),
+                disabledForegroundColor: Colors.white.withValues(alpha: 0.2),
               ),
               child: const Text(
-                'Verify & Proceed',
+                'VERIFY & PROCEED',
                 style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
+                ),
               ),
             ),
           ),
@@ -540,14 +583,14 @@ class _OtpScreenState extends State<OtpScreen> {
                       Text(
                         'Resend code in ',
                         style: TextStyle(
-                            color: Colors.grey[600],
+                            color: Colors.white.withValues(alpha: 0.5),
                             fontSize: 14,
                             fontWeight: FontWeight.w500),
                       ),
                       Text(
                         '${_resendTimer}s',
                         style: const TextStyle(
-                          color: Color(0xFFC9A227),
+                          color: primaryGold,
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),
@@ -560,7 +603,7 @@ class _OtpScreenState extends State<OtpScreen> {
                     child: const Text(
                       'Resend Code',
                       style: TextStyle(
-                        color: Color(0xFFC9A227),
+                        color: primaryGold,
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
                       ),

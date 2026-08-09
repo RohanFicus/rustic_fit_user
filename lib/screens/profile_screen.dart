@@ -24,13 +24,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
   static const Color darkBrown = Color(0xFF131517);
 
   final DataService _dataService = DataService();
+  List<Order> _apiOrders = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecentOrders();
+  }
+
+  Future<void> _loadRecentOrders() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      final orders = await ApiService.fetchCustomerOrders(DummyData.currentUser.id);
+      if (!mounted) return;
+      setState(() {
+        _apiOrders = orders;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isWide = size.width > 900;
     final user = _dataService.getCurrentUser();
-    final recentOrders = _dataService.getOrders();
+    final recentOrders = _apiOrders;
 
     return Scaffold(
       backgroundColor: lightCream,

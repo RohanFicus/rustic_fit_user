@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -75,11 +76,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
+            colorScheme: const ColorScheme.dark(
               primary: primaryGold,
-              onPrimary: Colors.white,
-              onSurface: darkBrown,
+              onPrimary: Colors.black,
+              surface: darkBrown,
+              onSurface: Colors.white,
             ),
+            dialogBackgroundColor: darkBrown,
           ),
           child: child!,
         );
@@ -148,11 +151,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = jsonDecode(response.body);
         if (responseData['status'] == true && responseData['data'] != null) {
-          final customer = responseData['data'];
+          final rawData = responseData['data'];
+          final customer = (rawData is Map && rawData.containsKey('customer'))
+              ? rawData['customer']
+              : rawData;
 
           // Map customer data into DummyData.currentUser
           DummyData.currentUser = User(
-            id: customer['id']?.toString() ?? '1',
+            id: customer['id']?.toString() ?? DummyData.currentUser.id,
             name: customer['firstName'] ?? 'Customer',
             lastName: customer['lastName'] ?? '',
             dob: _formatDob(),
@@ -226,301 +232,342 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     final isWide = size.width > 900;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(isWide ? 40 : 16),
-          child: Container(
-            width: isWide ? 600 : double.infinity,
-            padding: const EdgeInsets.all(32),
+      backgroundColor: darkBrown,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background Image with dark overlay
+          Image.asset(
+            'assets/images/banners/banner_1.png',
+            fit: BoxFit.cover,
+          ),
+          Container(
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 30,
-                  offset: const Offset(0, 15),
-                ),
-              ],
-            ),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Complete Your Profile',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: darkBrown,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Enter your customer details to access premium tailoring services',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  // Avatar Picker
-                  GestureDetector(
-                    onTap: _pickImage,
-                    child: Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 54,
-                          backgroundColor: primaryGold.withValues(alpha: 0.1),
-                          backgroundImage: _profileImage != null
-                              ? FileImage(_profileImage!)
-                              : null,
-                          child: _profileImage == null
-                              ? const Icon(
-                                  Icons.person_outline,
-                                  size: 40,
-                                  color: primaryGold,
-                                )
-                              : null,
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: const BoxDecoration(
-                              color: primaryGold,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.camera_alt_outlined,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  // Name Fields
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'First Name',
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF4A443F)),
-                            ),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _firstNameController,
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                              validator: (value) => value == null || value.trim().isEmpty
-                                  ? 'Enter first name'
-                                  : null,
-                              decoration: _inputDecoration('First Name'),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Last Name',
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF4A443F)),
-                            ),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _lastNameController,
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                              validator: (value) => value == null || value.trim().isEmpty
-                                  ? 'Enter last name'
-                                  : null,
-                              decoration: _inputDecoration('Last Name'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  // Email
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Email Address',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF4A443F),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Enter email address';
-                          }
-                          final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                          if (!emailRegExp.hasMatch(value.trim())) {
-                            return 'Enter a valid email address';
-                          }
-                          return null;
-                        },
-                        decoration: _inputDecoration('email@example.com'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  // Gender and Date of Birth
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Gender',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF4A443F),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            DropdownButtonFormField<String>(
-                              value: _selectedGender,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: darkBrown,
-                                  fontSize: 14),
-                              onChanged: (value) {
-                                setState(() => _selectedGender = value);
-                              },
-                              items: const [
-                                DropdownMenuItem(value: 'MALE', child: Text('MALE')),
-                                DropdownMenuItem(value: 'FEMALE', child: Text('FEMALE')),
-                                DropdownMenuItem(value: 'OTHER', child: Text('OTHER')),
-                              ],
-                              decoration: _inputDecoration('Gender'),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Date of Birth',
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF4A443F)),
-                            ),
-                            const SizedBox(height: 8),
-                            InkWell(
-                              onTap: _selectDate,
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: greyBorder),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      _selectedDob == null
-                                          ? 'YYYY-MM-DD'
-                                          : _formatDob(),
-                                      style: TextStyle(
-                                        fontWeight: _selectedDob == null
-                                            ? FontWeight.normal
-                                            : FontWeight.w600,
-                                        color: _selectedDob == null
-                                            ? Colors.grey[400]
-                                            : darkBrown,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    const Icon(
-                                      Icons.calendar_today_outlined,
-                                      size: 18,
-                                      color: primaryGold,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 36),
-                  // Submit button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 58,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _submitProfile,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryGold,
-                        foregroundColor: Colors.white,
-                        elevation: 4,
-                        shadowColor: primaryGold.withValues(alpha: 0.3),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text(
-                              'Save and Continue',
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.5),
-                            ),
-                    ),
-                  ),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.7),
+                  Colors.black.withValues(alpha: 0.8),
+                  darkBrown,
                 ],
               ),
             ),
           ),
-        ),
+
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isWide ? 650 : 450,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(32),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    child: Container(
+                      padding: const EdgeInsets.all(40),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(32),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          width: 1,
+                        ),
+                      ),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Text(
+                              'Complete Your Profile',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Enter your customer details to access premium tailoring services',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                            // Avatar Picker
+                            GestureDetector(
+                              onTap: _pickImage,
+                              child: Stack(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 54,
+                                    backgroundColor: primaryGold.withValues(alpha: 0.1),
+                                    backgroundImage: _profileImage != null
+                                        ? FileImage(_profileImage!)
+                                        : null,
+                                    child: _profileImage == null
+                                        ? const Icon(
+                                            Icons.person_outline,
+                                            size: 40,
+                                            color: primaryGold,
+                                          )
+                                        : null,
+                                  ),
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: const BoxDecoration(
+                                        color: primaryGold,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.camera_alt_outlined,
+                                        size: 16,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                            // Name Fields
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'FIRST NAME',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w900,
+                                          color: primaryGold,
+                                          letterSpacing: 2,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      TextFormField(
+                                        controller: _firstNameController,
+                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                                        validator: (value) => value == null || value.trim().isEmpty
+                                            ? 'Enter first name'
+                                            : null,
+                                        decoration: _inputDecoration('First Name'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'LAST NAME',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w900,
+                                          color: primaryGold,
+                                          letterSpacing: 2,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      TextFormField(
+                                        controller: _lastNameController,
+                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                                        validator: (value) => value == null || value.trim().isEmpty
+                                            ? 'Enter last name'
+                                            : null,
+                                        decoration: _inputDecoration('Last Name'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            // Email
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'EMAIL ADDRESS',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                    color: primaryGold,
+                                    letterSpacing: 2,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                TextFormField(
+                                  controller: _emailController,
+                                  keyboardType: TextInputType.emailAddress,
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                                  validator: (value) {
+                                    if (value == null || value.trim().isEmpty) {
+                                      return 'Enter email address';
+                                    }
+                                    final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                                    if (!emailRegExp.hasMatch(value.trim())) {
+                                      return 'Enter a valid email address';
+                                    }
+                                    return null;
+                                  },
+                                  decoration: _inputDecoration('email@example.com'),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            // Gender and Date of Birth
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'GENDER',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w900,
+                                          color: primaryGold,
+                                          letterSpacing: 2,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      DropdownButtonFormField<String>(
+                                        value: _selectedGender,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                            fontSize: 14),
+                                        dropdownColor: darkBrown,
+                                        iconEnabledColor: primaryGold,
+                                        onChanged: (value) {
+                                          setState(() => _selectedGender = value);
+                                        },
+                                        items: const [
+                                          DropdownMenuItem(value: 'MALE', child: Text('MALE')),
+                                          DropdownMenuItem(value: 'FEMALE', child: Text('FEMALE')),
+                                          DropdownMenuItem(value: 'OTHER', child: Text('OTHER')),
+                                        ],
+                                        decoration: _inputDecoration('Gender'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'DATE OF BIRTH',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w900,
+                                          color: primaryGold,
+                                          letterSpacing: 2,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      InkWell(
+                                        onTap: _selectDate,
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 16),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(alpha: 0.05),
+                                            borderRadius: BorderRadius.circular(16),
+                                            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                _selectedDob == null
+                                                    ? 'YYYY-MM-DD'
+                                                    : _formatDob(),
+                                                style: TextStyle(
+                                                  fontWeight: _selectedDob == null
+                                                      ? FontWeight.normal
+                                                      : FontWeight.w600,
+                                                  color: _selectedDob == null
+                                                      ? Colors.white.withValues(alpha: 0.2)
+                                                      : Colors.white,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                              const Icon(
+                                                Icons.calendar_today_outlined,
+                                                size: 18,
+                                                color: primaryGold,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 36),
+                            // Submit button
+                            SizedBox(
+                              width: double.infinity,
+                              height: 64,
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _submitProfile,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: primaryGold,
+                                  foregroundColor: Colors.black,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20)),
+                                  disabledBackgroundColor: Colors.white.withValues(alpha: 0.05),
+                                ),
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          color: Colors.black,
+                                        ),
+                                      )
+                                    : const Text(
+                                        'SAVE AND CONTINUE',
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 2),
+                                      ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -529,20 +576,20 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     return InputDecoration(
       hintText: hint,
       hintStyle: TextStyle(
-          color: Colors.grey[400], fontWeight: FontWeight.normal, fontSize: 14),
+          color: Colors.white.withValues(alpha: 0.2), fontWeight: FontWeight.normal, fontSize: 14),
       filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      fillColor: Colors.white.withValues(alpha: 0.05),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: greyBorder),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: greyBorder),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: primaryGold, width: 1.5),
       ),
     );

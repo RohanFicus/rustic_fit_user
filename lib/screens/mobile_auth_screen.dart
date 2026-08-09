@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:ui';
+
 import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -15,6 +17,10 @@ class MobileAuthScreen extends StatefulWidget {
 
 class _MobileAuthScreenState extends State<MobileAuthScreen> {
   final TextEditingController _phoneController = TextEditingController();
+
+  static const Color primaryGold = Color(0xFFC9A227);
+  static const Color darkBrown = Color(0xFF131517);
+
   Country _selectedCountry = Country(
     phoneCode: '91',
     countryCode: 'IN',
@@ -54,15 +60,16 @@ class _MobileAuthScreenState extends State<MobileAuthScreen> {
       builder: (context) => const Center(
         child: CircularProgressIndicator(
           strokeWidth: 3,
-          color: Color(0xFFC9A227),
+          color: primaryGold,
         ),
       ),
     );
 
     try {
       final countryCode = '+${_selectedCountry.phoneCode}';
-      final url = Uri.parse('https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/auth/otp/request');
-      
+      final url = Uri.parse(
+          'https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/auth/otp/request');
+
       final response = await http.post(
         url,
         headers: {
@@ -87,7 +94,8 @@ class _MobileAuthScreenState extends State<MobileAuthScreen> {
           if (decoded is Map<String, dynamic>) {
             status = decoded['status'] == true;
             apiMessage = decoded['message']?.toString();
-            if (decoded['data'] is Map && decoded['data'].containsKey('requestId')) {
+            if (decoded['data'] is Map &&
+                decoded['data'].containsKey('requestId')) {
               requestId = decoded['data']['requestId']?.toString();
             }
           }
@@ -118,7 +126,8 @@ class _MobileAuthScreenState extends State<MobileAuthScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to request OTP: ${response.statusCode} - ${response.body}'),
+            content: Text(
+                'Failed to request OTP: ${response.statusCode} - ${response.body}'),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),
@@ -144,174 +153,173 @@ class _MobileAuthScreenState extends State<MobileAuthScreen> {
     final isWide = size.width > 900;
 
     return Scaffold(
-      backgroundColor: const Color(
-          0xFFF5F5F5), // Light grey for contrast with the white card
-      body: Center(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(isWide ? 40 : 16),
-          child: Container(
-            width: isWide ? 1000 : double.infinity,
-            height: isWide ? 650 : null,
+      backgroundColor: darkBrown,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background Image with dark overlay
+          Image.asset(
+            'assets/images/banners/banner_1.png',
+            fit: BoxFit.cover,
+          ),
+          Container(
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 30,
-                  offset: const Offset(0, 15),
-                ),
-                BoxShadow(
-                  color: const Color(0xFFC9A227).withValues(alpha: 0.05),
-                  blurRadius: 40,
-                  offset: const Offset(0, 20),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: isWide
-                  ? Row(
-                      children: [
-                        Expanded(child: _buildDecorativeSide()),
-                        Expanded(child: _buildFormSide()),
-                      ],
-                    )
-                  : Column(
-                      children: [
-                        _buildDecorativeSide(height: 300),
-                        _buildFormSide(),
-                      ],
-                    ),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.7),
+                  Colors.black.withValues(alpha: 0.8),
+                  darkBrown,
+                ],
+              ),
             ),
           ),
-        ),
+
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isWide ? 1000 : 450,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(32),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(32),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          width: 1,
+                        ),
+                      ),
+                      child: isWide
+                          ? Row(
+                              children: [
+                                Expanded(child: _buildDecorativeSide()),
+                                Expanded(child: _buildFormSide()),
+                              ],
+                            )
+                          : Column(
+                              children: [
+                                _buildDecorativeSide(height: 250),
+                                _buildFormSide(),
+                              ],
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildDecorativeSide({double? height}) {
     return Container(
-      height: height ?? double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFC9A227),
-            Color(0xFFD4AF37),
-          ],
+      height: height ?? 650,
+      padding: const EdgeInsets.all(48),
+      decoration: BoxDecoration(
+        color: primaryGold.withValues(alpha: 0.1),
+        border: Border(
+          right: height == null
+              ? BorderSide(color: Colors.white.withValues(alpha: 0.1))
+              : BorderSide.none,
+          bottom: height != null
+              ? BorderSide(color: Colors.white.withValues(alpha: 0.1))
+              : BorderSide.none,
         ),
       ),
-      padding: const EdgeInsets.all(48),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            'Experience Premium\nCustom Tailoring',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-              height: 1.2,
-              shadows: [
-                Shadow(
-                  color: Colors.black26,
-                  offset: Offset(0, 2),
-                  blurRadius: 4,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Perfectly fitted clothes crafted by master craftsmen, just for you.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
-              fontSize: 16,
-              height: 1.5,
-            ),
-          ),
-          const Spacer(),
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.black.withValues(alpha: 0.3),
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+              border: Border.all(color: primaryGold.withValues(alpha: 0.3)),
             ),
             child: Image.asset(
               'assets/images/logo.png',
-              height: 140,
+              height: height != null ? 60 : 120,
             ),
           ),
-          const Spacer(),
+          const SizedBox(height: 32),
+          const Text(
+            'RUSTIC FIT',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 8,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'BESPOKE TAILORING STUDIO',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: primaryGold.withValues(alpha: 0.7),
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 3,
+            ),
+          ),
+          if (height == null) ...[
+            const Spacer(),
+            Text(
+              'Experience the luxury of perfectly fitted clothes, crafted just for you.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 14,
+                height: 1.6,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildFormSide() {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Padding(
-      padding: const EdgeInsets.all(48),
+      padding: const EdgeInsets.all(40),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFC9A227).withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.person_2_outlined,
-                    size: 32,
-                    color: Color(0xFFC9A227),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Welcome Back',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF2D2926),
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Sign in to your account',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
+          const Text(
+            'Welcome',
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 48),
-          const Text(
-            'Mobile Number',
+          const SizedBox(height: 8),
+          Text(
+            'Sign in to continue your bespoke journey',
             style: TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF4A443F),
+              color: Colors.white.withValues(alpha: 0.5),
+            ),
+          ),
+          const SizedBox(height: 40),
+          Text(
+            'MOBILE NUMBER',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              color: primaryGold.withValues(alpha: 0.8),
+              letterSpacing: 2,
             ),
           ),
           const SizedBox(height: 12),
@@ -322,6 +330,12 @@ class _MobileAuthScreenState extends State<MobileAuthScreen> {
                   showCountryPicker(
                     context: context,
                     showPhoneCode: true,
+                    countryListTheme: CountryListThemeData(
+                      backgroundColor: darkBrown,
+                      textStyle: const TextStyle(color: Colors.white),
+                      searchTextStyle: const TextStyle(color: Colors.white),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
                     onSelect: (Country country) {
                       setState(() => _selectedCountry = country);
                     },
@@ -331,16 +345,10 @@ class _MobileAuthScreenState extends State<MobileAuthScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE9ECEF)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(16),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.1)),
                   ),
                   child: Row(
                     children: [
@@ -350,54 +358,45 @@ class _MobileAuthScreenState extends State<MobileAuthScreen> {
                       Text(
                         '+${_selectedCountry.phoneCode}',
                         style: const TextStyle(
+                          color: Colors.white,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF2D2926),
                         ),
                       ),
                       const Icon(Icons.keyboard_arrow_down_rounded,
-                          size: 20, color: Color(0xFFC9A227)),
+                          size: 20, color: primaryGold),
                     ],
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                    decoration: InputDecoration(
-                      hintText: 'Phone number',
-                      hintStyle: TextStyle(
-                          color: Colors.grey[400],
-                          fontWeight: FontWeight.normal),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 16),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE9ECEF)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE9ECEF)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                            color: Color(0xFFC9A227), width: 1.5),
-                      ),
+                child: TextField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w600),
+                  decoration: InputDecoration(
+                    hintText: 'Phone number',
+                    hintStyle:
+                        TextStyle(color: Colors.white.withValues(alpha: 0.2)),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.05),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 16),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.1)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.1)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide:
+                          const BorderSide(color: primaryGold, width: 1.5),
                     ),
                   ),
                 ),
@@ -407,86 +406,64 @@ class _MobileAuthScreenState extends State<MobileAuthScreen> {
           const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
-            height: 58,
+            height: 64,
             child: ElevatedButton(
               onPressed: _requestOtp,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFC9A227),
-                foregroundColor: Colors.white,
-                elevation: 4,
-                shadowColor: const Color(0xFFC9A227).withValues(alpha: 0.3),
+                backgroundColor: primaryGold,
+                foregroundColor: Colors.black,
+                elevation: 0,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(20)),
               ),
               child: const Text(
-                'Get OTP on WhatsApp',
+                'GET OTP',
                 style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 32),
-          const Row(
+          const SizedBox(height: 40),
+          Row(
             children: [
-              Expanded(child: Divider(color: Color(0xFFE9ECEF))),
+              Expanded(
+                  child: Divider(color: Colors.white.withValues(alpha: 0.1))),
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'Or sign in with',
+                  'OR SIGN IN WITH',
                   style: TextStyle(
-                      color: Color(0xFFADB5BD),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600),
+                    color: Colors.white.withValues(alpha: 0.3),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 2,
+                  ),
                 ),
               ),
-              Expanded(child: Divider(color: Color(0xFFE9ECEF))),
+              Expanded(
+                  child: Divider(color: Colors.white.withValues(alpha: 0.1))),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
           Row(
             children: [
               Expanded(
                 child: _buildSocialButton(
                   icon: FontAwesomeIcons.google,
-                  label: 'Google',
                   onPressed: () {},
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: _buildSocialButton(
-                  icon: FontAwesomeIcons.facebook,
-                  label: 'Facebook',
+                  icon: FontAwesomeIcons.apple,
                   onPressed: () {},
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 32),
-          Center(
-            child: GestureDetector(
-              onTap: () {},
-              child: RichText(
-                text: TextSpan(
-                  text: "Don't have an account? ",
-                  style: const TextStyle(
-                      color: Color(0xFF8E847C),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500),
-                  children: [
-                    TextSpan(
-                      text: 'Sign Up',
-                      style: TextStyle(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ),
         ],
       ),
@@ -495,32 +472,17 @@ class _MobileAuthScreenState extends State<MobileAuthScreen> {
 
   Widget _buildSocialButton({
     required IconData icon,
-    required String label,
     required VoidCallback onPressed,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white.withValues(alpha: 0.02),
       ),
-      child: OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 18),
-        label: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          foregroundColor: const Color(0xFF4A443F),
-          backgroundColor: Colors.white,
-          side: const BorderSide(color: Color(0xFFE9ECEF)),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      ),
+      child: Icon(icon, color: Colors.white, size: 20),
     );
   }
 }

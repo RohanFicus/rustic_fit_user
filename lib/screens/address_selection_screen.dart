@@ -10,6 +10,7 @@ import 'saved_addresses_screen.dart';
 
 class AddressSelectionScreen extends StatefulWidget {
   final Product product;
+  final Map<String, dynamic>? selectedSize;
   final String? customFabric;
   final String? customColor;
   final String? customType;
@@ -20,6 +21,7 @@ class AddressSelectionScreen extends StatefulWidget {
   const AddressSelectionScreen({
     super.key,
     required this.product,
+    this.selectedSize,
     this.customFabric,
     this.customColor,
     this.customType,
@@ -659,6 +661,7 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
                         MaterialPageRoute(
                           builder: (context) => PaymentScreen(
                             product: widget.product,
+                            selectedSize: widget.selectedSize,
                             customFabric: widget.customFabric,
                             customColor: widget.customColor,
                             customType: widget.customType,

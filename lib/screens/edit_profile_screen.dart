@@ -414,7 +414,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = jsonDecode(response.body);
         if (responseData['status'] == true && responseData['data'] != null) {
-          final customer = responseData['data'];
+          final rawData = responseData['data'];
+          final customer = (rawData is Map && rawData.containsKey('customer'))
+              ? rawData['customer']
+              : rawData;
 
           // Map customer data into DummyData.currentUser
           setState(() {

@@ -10,6 +10,7 @@ import 'main_container.dart';
 
 class PaymentScreen extends StatefulWidget {
   final Product product;
+  final Map<String, dynamic>? selectedSize;
   final String? customFabric;
   final String? customColor;
   final String? customType;
@@ -23,6 +24,7 @@ class PaymentScreen extends StatefulWidget {
   const PaymentScreen({
     super.key,
     required this.product,
+    this.selectedSize,
     this.customFabric,
     this.customColor,
     this.customType,
@@ -499,19 +501,29 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
                   // 2. Find sizeId
                   String sizeId = 'c535b1f2-0fdd-43da-ac7d-bc4b0d6c3ddc'; // Default L sizeId from prompt
-                  final rawSizes = widget.product.rawProductSizes;
-                  if (rawSizes != null && rawSizes.isNotEmpty) {
-                    bool found = false;
-                    for (var sizeMap in rawSizes) {
-                      final code = sizeMap['sizeCode']?.toString().toUpperCase();
-                      if (code == 'L' || code == 'M') {
-                        sizeId = sizeMap['id']?.toString() ?? sizeId;
-                        found = true;
-                        break;
+                  if (widget.selectedSize != null) {
+                    sizeId = widget.selectedSize!['sizeId']?.toString() ?? 
+                             widget.selectedSize!['id']?.toString() ?? 
+                             sizeId;
+                  } else {
+                    final rawSizes = widget.product.rawProductSizes;
+                    if (rawSizes != null && rawSizes.isNotEmpty) {
+                      bool found = false;
+                      for (var sizeMap in rawSizes) {
+                        final code = sizeMap['sizeCode']?.toString().toUpperCase();
+                        if (code == 'L' || code == 'M') {
+                          sizeId = sizeMap['sizeId']?.toString() ?? 
+                                   sizeMap['id']?.toString() ?? 
+                                   sizeId;
+                          found = true;
+                          break;
+                        }
                       }
-                    }
-                    if (!found && rawSizes.first['id'] != null) {
-                    sizeId = rawSizes.first['id']!.toString();
+                      if (!found) {
+                        sizeId = rawSizes.first['sizeId']?.toString() ?? 
+                                 rawSizes.first['id']?.toString() ?? 
+                                 sizeId;
+                      }
                     }
                   }
 
@@ -562,7 +574,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     final items = [
                       OrderItem(
                         product: widget.product,
-                        size: data['size']?['sizeCode']?.toString() ?? 'M',
+                        size: data['size']?['sizeCode']?.toString() ?? 
+                              widget.selectedSize?['sizeCode']?.toString() ?? 
+                              'M',
                         quantity: 1,
                         price: widget.product.price,
                       )

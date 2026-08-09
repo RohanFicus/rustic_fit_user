@@ -10,8 +10,9 @@ import '../models/dummy_data.dart';
 
 class FittingDetailsScreen extends StatefulWidget {
   final Product product;
+  final Map<String, dynamic>? selectedSize;
 
-  const FittingDetailsScreen({super.key, required this.product});
+  const FittingDetailsScreen({super.key, required this.product, this.selectedSize});
 
   @override
   State<FittingDetailsScreen> createState() => _FittingDetailsScreenState();
@@ -841,6 +842,7 @@ class _FittingDetailsScreenState extends State<FittingDetailsScreen> {
                     MaterialPageRoute(
                       builder: (context) => AddressSelectionScreen(
                         product: widget.product,
+                        selectedSize: widget.selectedSize,
                         customFabric: _fabricController.text,
                         customColor: _colorController.text,
                         customType: _typeController.text,

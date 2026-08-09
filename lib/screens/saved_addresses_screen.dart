@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/dummy_data.dart';
-import '../services/data_service.dart';
 import '../services/api_service.dart';
+import '../services/data_service.dart';
 
 class SavedAddressesScreen extends StatefulWidget {
   const SavedAddressesScreen({super.key});
@@ -31,7 +31,8 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
     setState(() => _isLoading = true);
     try {
       final token = ApiService.accessToken;
-      final url = Uri.parse('https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/profile/addresses');
+      final url = Uri.parse(
+          'https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/profile/addresses');
       final response = await http.get(
         url,
         headers: {
@@ -52,8 +53,9 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
             final city = item['city'] ?? '';
             final state = item['state'] ?? '';
             final pincode = item['pincode'] ?? '';
-            
-            final fullAddress = "$line1${line2.isNotEmpty ? ', ' + line2 : ''}, $city, $state $pincode";
+
+            final fullAddress =
+                "$line1${line2.isNotEmpty ? ', ' + line2 : ''}, $city, $state $pincode";
             loaded.add(fullAddress);
           }
           setState(() {
@@ -150,37 +152,37 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
             )
           : DummyData.currentUser.savedAddresses.isEmpty
               ? _buildEmptyState()
-          : SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: EdgeInsets.all(isWide ? 48 : 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              : SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.all(isWide ? 48 : 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildSectionTitle("Primary Addresses"),
-                      if (isWide)
-                        ElevatedButton.icon(
-                          onPressed: () => _addNewAddress(true),
-                          icon: const Icon(Icons.add_rounded, size: 20),
-                          label: const Text("Add New Address"),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: darkBrown,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 24, vertical: 20),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16)),
-                          ),
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildSectionTitle("Primary Addresses"),
+                          if (isWide)
+                            ElevatedButton.icon(
+                              onPressed: () => _addNewAddress(true),
+                              icon: const Icon(Icons.add_rounded, size: 20),
+                              label: const Text("Add New Address"),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: darkBrown,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 24, vertical: 20),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16)),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      isWide ? _buildWideGrid() : _buildMobileList(),
                     ],
                   ),
-                  const SizedBox(height: 32),
-                  isWide ? _buildWideGrid() : _buildMobileList(),
-                ],
-              ),
-            ),
+                ),
       floatingActionButton: isWide
           ? null
           : FloatingActionButton.extended(
@@ -381,8 +383,9 @@ class _AddAddressFormState extends State<AddAddressForm> {
       final token = ApiService.accessToken;
       final customerId = DummyData.currentUser.id;
 
-      final url = Uri.parse('https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/profile/address');
-      
+      final url = Uri.parse(
+          'https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/profile/address');
+
       final payload = {
         "customerId": customerId,
         "addressType": selectedType.toUpperCase(),
@@ -416,7 +419,7 @@ class _AddAddressFormState extends State<AddAddressForm> {
         if (responseData['status'] == true) {
           final fullAddress =
               "${_addressController.text}${_apartmentController.text.isNotEmpty ? ', ' + _apartmentController.text : ''}, $selectedCity, $selectedState ${_zipController.text}";
-          
+
           Navigator.pop(context, fullAddress);
         } else {
           final message = responseData['message'] ?? 'Failed to save address';
@@ -608,7 +611,8 @@ class _AddAddressFormState extends State<AddAddressForm> {
                           )
                         : const Text("Save Address",
                             style: TextStyle(
-                                fontWeight: FontWeight.w900, color: Colors.white)),
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white)),
                   ),
                 ),
               ],
