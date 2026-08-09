@@ -1,6 +1,3 @@
-import 'dart:io';
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -202,15 +199,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 _buildSectionHeader("Select Payment Mode",
                     Icons.account_balance_wallet_outlined),
                 const SizedBox(height: 32),
+                // _buildPaymentMethod(
+                //     0, "Credit / Debit Card", Icons.credit_card_rounded),
+                // _buildPaymentMethod(
+                //     1, "UPI / Digital Wallet", Icons.qr_code_2_rounded),
                 _buildPaymentMethod(
-                    0, "Credit / Debit Card", Icons.credit_card_rounded),
-                _buildPaymentMethod(
-                    1, "UPI / Digital Wallet", Icons.qr_code_2_rounded),
-                _buildPaymentMethod(
-                    2, "Cash on Delivery", Icons.payments_rounded),
-                const SizedBox(height: 40),
-                _buildSectionHeader(
-                    "Price Breakdown", Icons.receipt_long_outlined),
+                    0, "Cash on Delivery", Icons.payments_rounded),
+                // const SizedBox(height: 40),
+                // _buildSectionHeader(
+                //     "Price Breakdown", Icons.receipt_long_outlined),
                 const SizedBox(height: 24),
                 _buildPriceBreakdown(),
               ],
@@ -307,7 +304,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   width: 80,
                   height: 100,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(80, 100),
+                  errorBuilder: (context, error, stackTrace) =>
+                      _buildPlaceholderImage(80, 100),
                 ),
               ),
               const SizedBox(width: 20),
@@ -317,11 +315,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   children: [
                     Text(widget.product.name,
                         style: const TextStyle(
-                            fontWeight: FontWeight.w900, fontSize: 16, color: darkBrown)),
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                            color: darkBrown)),
                     const SizedBox(height: 8),
                     Text(
                       "${widget.customFabric ?? widget.product.fabric} • ${widget.customType ?? widget.product.type}",
-                      style: TextStyle(color: Colors.grey[500], fontSize: 13, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                          color: Colors.grey[500],
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -497,32 +500,35 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
                 try {
                   // 1. Fetch serviceLocationId
-                  final serviceLocationId = await ApiService.fetchServiceLocationId(widget.pincode);
+                  final serviceLocationId =
+                      await ApiService.fetchServiceLocationId(widget.pincode);
 
                   // 2. Find sizeId
-                  String sizeId = 'c535b1f2-0fdd-43da-ac7d-bc4b0d6c3ddc'; // Default L sizeId from prompt
+                  String sizeId =
+                      'c535b1f2-0fdd-43da-ac7d-bc4b0d6c3ddc'; // Default L sizeId from prompt
                   if (widget.selectedSize != null) {
-                    sizeId = widget.selectedSize!['sizeId']?.toString() ?? 
-                             widget.selectedSize!['id']?.toString() ?? 
-                             sizeId;
+                    sizeId = widget.selectedSize!['sizeId']?.toString() ??
+                        widget.selectedSize!['id']?.toString() ??
+                        sizeId;
                   } else {
                     final rawSizes = widget.product.rawProductSizes;
                     if (rawSizes != null && rawSizes.isNotEmpty) {
                       bool found = false;
                       for (var sizeMap in rawSizes) {
-                        final code = sizeMap['sizeCode']?.toString().toUpperCase();
+                        final code =
+                            sizeMap['sizeCode']?.toString().toUpperCase();
                         if (code == 'L' || code == 'M') {
-                          sizeId = sizeMap['sizeId']?.toString() ?? 
-                                   sizeMap['id']?.toString() ?? 
-                                   sizeId;
+                          sizeId = sizeMap['sizeId']?.toString() ??
+                              sizeMap['id']?.toString() ??
+                              sizeId;
                           found = true;
                           break;
                         }
                       }
                       if (!found) {
-                        sizeId = rawSizes.first['sizeId']?.toString() ?? 
-                                 rawSizes.first['id']?.toString() ?? 
-                                 sizeId;
+                        sizeId = rawSizes.first['sizeId']?.toString() ??
+                            rawSizes.first['id']?.toString() ??
+                            sizeId;
                       }
                     }
                   }
@@ -538,50 +544,62 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
                   // 5. Call API
                   final responseMap = await ApiService.createOrder(
-                    customerAddressId: widget.addressId.isNotEmpty ? widget.addressId : 'f4669f13-5040-4fb0-af95-5544b2e03917',
+                    customerAddressId: widget.addressId.isNotEmpty
+                        ? widget.addressId
+                        : 'f4669f13-5040-4fb0-af95-5544b2e03917',
                     productId: widget.product.id,
                     sizeId: sizeId,
                     measurementSource: 'CUSTOMER',
-                    specialInstruction: widget.specialInstruction?.isNotEmpty == true 
-                        ? widget.specialInstruction! 
-                        : 'This is testing Order',
+                    specialInstruction:
+                        widget.specialInstruction?.isNotEmpty == true
+                            ? widget.specialInstruction!
+                            : 'This is testing Order',
                     measurements: measurementsJson,
                     imageFiles: imageFiles,
-                    serviceLocationId: serviceLocationId ?? 'dc2027ef-b5ff-4edf-8fb8-f92c5daab801',
+                    serviceLocationId: serviceLocationId ??
+                        'dc2027ef-b5ff-4edf-8fb8-f92c5daab801',
                   );
 
                   bool success = false;
 
-                  if (responseMap != null && responseMap['status'] == true && responseMap['data'] != null) {
+                  if (responseMap != null &&
+                      responseMap['status'] == true &&
+                      responseMap['data'] != null) {
                     final data = responseMap['data'];
                     final orderId = data['id']?.toString() ?? '';
                     final orderNumber = data['orderNumber']?.toString() ?? '';
                     final createdAtRaw = data['createdAt']?.toString() ?? '';
-                    final orderDate = DateTime.tryParse(createdAtRaw) ?? DateTime.now();
-                    final totalAmount = double.tryParse(data['totalAmount']?.toString() ?? '') ?? widget.product.price;
-                    
-                    final estDeliveryRaw = data['estimatedDeliveryDate']?.toString() ?? '';
-                    final deliveryDate = DateTime.tryParse(estDeliveryRaw) ?? orderDate.add(const Duration(days: 10));
-                    
-                    final orderStatusStr = data['orderStatus']?.toString() ?? 'ORDER_CREATED';
+                    final orderDate =
+                        DateTime.tryParse(createdAtRaw) ?? DateTime.now();
+                    final totalAmount = double.tryParse(
+                            data['totalAmount']?.toString() ?? '') ??
+                        widget.product.price;
+
+                    final estDeliveryRaw =
+                        data['estimatedDeliveryDate']?.toString() ?? '';
+                    final deliveryDate = DateTime.tryParse(estDeliveryRaw) ??
+                        orderDate.add(const Duration(days: 10));
+
+                    final orderStatusStr =
+                        data['orderStatus']?.toString() ?? 'ORDER_CREATED';
                     OrderStatus orderStatus = OrderStatus.pending;
                     if (orderStatusStr == 'ORDER_CREATED') {
                       orderStatus = OrderStatus.pending;
                     } else if (orderStatusStr.toLowerCase() == 'confirmed') {
                       orderStatus = OrderStatus.confirmed;
                     }
-                    
+
                     final items = [
                       OrderItem(
                         product: widget.product,
-                        size: data['size']?['sizeCode']?.toString() ?? 
-                              widget.selectedSize?['sizeCode']?.toString() ?? 
-                              'M',
+                        size: data['size']?['sizeCode']?.toString() ??
+                            widget.selectedSize?['sizeCode']?.toString() ??
+                            'M',
                         quantity: 1,
                         price: widget.product.price,
                       )
                     ];
-                    
+
                     final newOrder = Order(
                       id: orderId,
                       orderNumber: orderNumber,
@@ -591,11 +609,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       totalAmount: totalAmount,
                       deliveryAddress: widget.deliveryAddress,
                       tailorName: 'Bhandari Tailors',
-                      tailorAddress: 'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
+                      tailorAddress:
+                          'Plot 105, Near Old Faridabad Metro Station, Faridabad, Haryana',
                       deliveryDate: deliveryDate,
                     );
-                    
-                    DummyData.orders.insert(0, newOrder); // Prepend to the local list
+
+                    DummyData.orders
+                        .insert(0, newOrder); // Prepend to the local list
                     success = true;
                   }
 
@@ -609,7 +629,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Failed to place order. Please try again.'),
+                          content:
+                              Text('Failed to place order. Please try again.'),
                           backgroundColor: Colors.redAccent,
                           behavior: SnackBarBehavior.floating,
                         ),
