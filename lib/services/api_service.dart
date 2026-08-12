@@ -735,6 +735,43 @@ class ApiService {
     return null;
   }
 
+  static Future<Map<String, dynamic>?> verifyOrderPayment({
+    required String orderNumber,
+    required String razorpayOrderId,
+    required String razorpayPaymentId,
+    required String razorpaySignature,
+  }) async {
+    try {
+      final token = accessToken;
+      final url = Uri.parse(
+          'https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/order/payment/verify');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+          'ngrok-skip-browser-warning': 'true',
+        },
+        body: jsonEncode({
+          'orderNumber': orderNumber,
+          'razorpayOrderId': razorpayOrderId,
+          'razorpayPaymentId': razorpayPaymentId,
+          'razorpaySignature': razorpaySignature,
+        }),
+      );
+
+      print('verifyOrderPayment response code: ${response.statusCode}');
+      print('verifyOrderPayment response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      print('Error verifying order payment: $e');
+    }
+    return null;
+  }
+
   // ==========================================
   // HELPER METHODS
   // ==========================================

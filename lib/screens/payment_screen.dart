@@ -566,22 +566,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       responseMap['status'] == true &&
                       responseMap['data'] != null) {
                     final data = responseMap['data'];
-                    final orderId = data['id']?.toString() ?? '';
-                    final orderNumber = data['orderNumber']?.toString() ?? '';
-                    final createdAtRaw = data['createdAt']?.toString() ?? '';
+                    final orderData = data['order'] != null ? data['order'] : data;
+                    final orderId = orderData['id']?.toString() ?? '';
+                    final orderNumber = orderData['orderNumber']?.toString() ?? '';
+                    final createdAtRaw = orderData['createdAt']?.toString() ?? '';
                     final orderDate =
                         DateTime.tryParse(createdAtRaw) ?? DateTime.now();
                     final totalAmount = double.tryParse(
-                            data['totalAmount']?.toString() ?? '') ??
+                            orderData['totalAmount']?.toString() ?? '') ??
                         widget.product.price;
 
                     final estDeliveryRaw =
-                        data['estimatedDeliveryDate']?.toString() ?? '';
+                        orderData['estimatedDeliveryDate']?.toString() ?? '';
                     final deliveryDate = DateTime.tryParse(estDeliveryRaw) ??
                         orderDate.add(const Duration(days: 10));
 
                     final orderStatusStr =
-                        data['orderStatus']?.toString() ?? 'ORDER_CREATED';
+                        orderData['orderStatus']?.toString() ?? 'ORDER_CREATED';
                     OrderStatus orderStatus = OrderStatus.pending;
                     if (orderStatusStr == 'ORDER_CREATED') {
                       orderStatus = OrderStatus.pending;
@@ -592,7 +593,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     final items = [
                       OrderItem(
                         product: widget.product,
-                        size: data['size']?['sizeCode']?.toString() ??
+                        size: orderData['size']?['sizeCode']?.toString() ??
                             widget.selectedSize?['sizeCode']?.toString() ??
                             'M',
                         quantity: 1,
@@ -617,6 +618,31 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     DummyData.orders
                         .insert(0, newOrder); // Prepend to the local list
                     success = true;
+
+                    // Verify payment if payment details exist
+                    final paymentData = data['payment'];
+                    if (paymentData != null) {
+                      final razorpayOrderId =
+                          paymentData['razorpayOrderId']?.toString() ?? '';
+                      final razorpayPaymentId =
+                          paymentData['paymentReference']?.toString() ??
+                              paymentData['paymentId']?.toString() ??
+                              '';
+                      if (orderNumber.isNotEmpty &&
+                          razorpayOrderId.isNotEmpty &&
+                          razorpayPaymentId.isNotEmpty) {
+                        try {
+                          await ApiService.verifyOrderPayment(
+                            orderNumber: orderNumber,
+                            razorpayOrderId: razorpayOrderId,
+                            razorpayPaymentId: razorpayPaymentId,
+                            razorpaySignature: 'test_signature',
+                          );
+                        } catch (e) {
+                          print('Payment verification error during checkout: $e');
+                        }
+                      }
+                    }
                   }
 
                   if (mounted) {
