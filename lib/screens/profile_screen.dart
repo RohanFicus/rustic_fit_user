@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/app_network_image.dart';
 import '../models/dummy_data.dart';
-import '../services/data_service.dart';
 import '../services/api_service.dart';
+import '../services/data_service.dart';
 import 'body_measurements_screen.dart';
 import 'edit_profile_screen.dart';
 import 'mobile_auth_screen.dart';
@@ -39,7 +40,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _isLoading = true;
     });
     try {
-      final orders = await ApiService.fetchCustomerOrders(DummyData.currentUser.id);
+      final orders =
+          await ApiService.fetchCustomerOrders(DummyData.currentUser.id);
       if (!mounted) return;
       setState(() {
         _apiOrders = orders;
@@ -390,7 +392,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out of your account?'),
+        content:
+            const Text('Are you sure you want to sign out of your account?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -403,12 +406,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               if (mounted) {
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => const MobileAuthScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const MobileAuthScreen()),
                   (route) => false,
                 );
               }
             },
-            child: const Text('Sign Out', style: TextStyle(color: Colors.redAccent)),
+            child: const Text('Sign Out',
+                style: TextStyle(color: Colors.redAccent)),
           ),
         ],
       ),
@@ -519,8 +524,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.network(firstItem.product.image,
-                  width: 50, height: 65, fit: BoxFit.cover),
+              child: AppNetworkImage(
+                  imageUrl: firstItem.product.image,
+                  width: 50,
+                  height: 65,
+                  fit: BoxFit.cover),
             ),
             const SizedBox(width: 16),
             Expanded(

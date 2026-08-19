@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/dummy_data.dart';
 import '../services/api_service.dart';
+import '../widgets/app_network_image.dart';
 import 'product_detail_screen.dart';
 
 class CategoryProductsScreen extends StatefulWidget {
@@ -162,7 +163,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                               itemCount: _products.length,
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: isWide ? 5 : 3,
+                                crossAxisCount: isWide ? 5 : 2,
                                 childAspectRatio: 0.68,
                                 mainAxisSpacing: isWide ? 16 : 10,
                                 crossAxisSpacing: isWide ? 16 : 10,
@@ -254,12 +255,9 @@ class _ProductCardState extends State<_ProductCard> {
                             child: hasImage
                                 ? Hero(
                                     tag: 'product_image_${widget.product.id}',
-                                    child: Image.network(
-                                      imagePath,
+                                    child: AppNetworkImage(
+                                      imageUrl: imagePath,
                                       fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) =>
-                                              _buildPlaceholderImage(),
                                     ),
                                   )
                                 : _buildPlaceholderImage(),
@@ -285,7 +283,8 @@ class _ProductCardState extends State<_ProductCard> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.star_rounded, size: 12, color: Color(0xFFC9A227)),
+                                const Icon(Icons.star_rounded,
+                                    size: 12, color: Color(0xFFC9A227)),
                                 const SizedBox(width: 2),
                                 Text(
                                   widget.product.rating.toString(),

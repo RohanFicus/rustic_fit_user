@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
 import '../models/dummy_data.dart';
 import '../services/api_service.dart';
+import '../widgets/app_network_image.dart';
 import 'category_products_screen.dart';
 
 class SubCategoriesScreen extends StatefulWidget {
@@ -16,7 +18,7 @@ class _SubCategoriesScreenState extends State<SubCategoriesScreen> {
   List<Category> _categories = [];
   Category? _selectedCategory;
   List<SubCategory> _subCategories = [];
-  
+
   bool _isLoadingCategories = true;
   bool _isLoadingSubCategories = true;
   String _categoriesError = '';
@@ -44,7 +46,7 @@ class _SubCategoriesScreenState extends State<SubCategoriesScreen> {
         setState(() {
           _categories = cats;
           _isLoadingCategories = false;
-          
+
           if (_selectedCategory != null) {
             final matched = cats.where((c) => c.id == _selectedCategory!.id);
             if (matched.isNotEmpty) {
@@ -96,14 +98,12 @@ class _SubCategoriesScreenState extends State<SubCategoriesScreen> {
   Widget _buildCategoryIcon(Category cat, bool isSelected) {
     final iconPath = cat.icon;
     final color = isSelected ? Colors.white : Colors.grey[600];
-    
+
     if (iconPath.startsWith('http') || iconPath.startsWith('https')) {
-      return Image.network(
-        iconPath,
+      return AppNetworkImage(
+        imageUrl: iconPath,
         width: 20,
         height: 20,
-        color: color,
-        errorBuilder: (context, error, stackTrace) => Icon(Icons.style_outlined, color: color, size: 20),
       );
     } else {
       return Image.asset(
@@ -111,7 +111,8 @@ class _SubCategoriesScreenState extends State<SubCategoriesScreen> {
         width: 20,
         height: 20,
         color: color,
-        errorBuilder: (context, error, stackTrace) => Icon(Icons.style_outlined, color: color, size: 20),
+        errorBuilder: (context, error, stackTrace) =>
+            Icon(Icons.style_outlined, color: color, size: 20),
       );
     }
   }
@@ -127,7 +128,8 @@ class _SubCategoriesScreenState extends State<SubCategoriesScreen> {
         backgroundColor: Colors.white,
         elevation: 0.5,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: darkBrown, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: darkBrown, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -161,7 +163,8 @@ class _SubCategoriesScreenState extends State<SubCategoriesScreen> {
           child: SizedBox(
             width: 24,
             height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2.5, color: primaryGold),
+            child:
+                CircularProgressIndicator(strokeWidth: 2.5, color: primaryGold),
           ),
         ),
       );
@@ -175,11 +178,15 @@ class _SubCategoriesScreenState extends State<SubCategoriesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 24),
+            const Icon(Icons.error_outline_rounded,
+                color: Colors.redAccent, size: 24),
             const SizedBox(height: 8),
             Text(
               'Error',
-              style: TextStyle(fontSize: 12, color: Colors.grey[700], fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.bold),
             ),
             IconButton(
               icon: const Icon(Icons.refresh_rounded, color: primaryGold),
@@ -241,8 +248,12 @@ class _SubCategoriesScreenState extends State<SubCategoriesScreen> {
                             child: Text(
                               cat.name,
                               style: TextStyle(
-                                color: isSelected ? Colors.white : const Color(0xFF131517),
-                                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                                color: isSelected
+                                    ? Colors.white
+                                    : const Color(0xFF131517),
+                                fontWeight: isSelected
+                                    ? FontWeight.w900
+                                    : FontWeight.w700,
                                 fontSize: 14,
                               ),
                             ),
@@ -261,8 +272,12 @@ class _SubCategoriesScreenState extends State<SubCategoriesScreen> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: isSelected ? Colors.white : const Color(0xFF131517),
-                              fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                              color: isSelected
+                                  ? Colors.white
+                                  : const Color(0xFF131517),
+                              fontWeight: isSelected
+                                  ? FontWeight.w900
+                                  : FontWeight.w700,
                               fontSize: 11,
                             ),
                           ),
@@ -288,20 +303,26 @@ class _SubCategoriesScreenState extends State<SubCategoriesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline_rounded, size: 48, color: Colors.redAccent),
+            const Icon(Icons.error_outline_rounded,
+                size: 48, color: Colors.redAccent),
             const SizedBox(height: 16),
             Text(
               'Failed to load styles',
-              style: TextStyle(fontSize: 16, color: Colors.grey[700], fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             ElevatedButton(
               onPressed: () => _fetchSubCategories(_selectedCategory!.id),
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryGold,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Try Again', style: TextStyle(color: Colors.white)),
+              child: const Text('Try Again',
+                  style: TextStyle(color: Colors.white)),
             )
           ],
         ),
@@ -317,7 +338,10 @@ class _SubCategoriesScreenState extends State<SubCategoriesScreen> {
             const SizedBox(height: 16),
             Text(
               'No styles available',
-              style: TextStyle(color: Colors.grey[600], fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -356,7 +380,8 @@ class _SubCategoriesScreenState extends State<SubCategoriesScreen> {
             const SizedBox(height: 8),
             Text(
               'Explore bespoke styles in the ${_selectedCategory?.name} collection.',
-              style: TextStyle(color: Colors.grey[500], fontSize: 13, height: 1.4),
+              style:
+                  TextStyle(color: Colors.grey[500], fontSize: 13, height: 1.4),
             ),
             const SizedBox(height: 32),
             GridView.builder(
@@ -377,7 +402,8 @@ class _SubCategoriesScreenState extends State<SubCategoriesScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => CategoryProductsScreen(subCategory: sub),
+                        builder: (context) =>
+                            CategoryProductsScreen(subCategory: sub),
                       ),
                     );
                   },
@@ -407,7 +433,8 @@ class _SubCategoryCardState extends State<_SubCategoryCard> {
   @override
   Widget build(BuildContext context) {
     final imagePath = widget.sub.image;
-    final hasImage = imagePath.isNotEmpty && (imagePath.startsWith('http') || imagePath.startsWith('assets'));
+    final hasImage = imagePath.isNotEmpty &&
+        (imagePath.startsWith('http') || imagePath.startsWith('assets'));
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -423,7 +450,9 @@ class _SubCategoryCardState extends State<_SubCategoryCard> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: _isHovered ? const Color(0xFFC9A227) : const Color(0xFFF1F3F5),
+                color: _isHovered
+                    ? const Color(0xFFC9A227)
+                    : const Color(0xFFF1F3F5),
                 width: 1.5,
               ),
               boxShadow: [
@@ -442,10 +471,9 @@ class _SubCategoryCardState extends State<_SubCategoryCard> {
                 children: [
                   Positioned.fill(
                     child: hasImage
-                        ? Image.network(
-                            imagePath,
+                        ? AppNetworkImage(
+                            imageUrl: imagePath,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => _buildPlaceholderBackground(),
                           )
                         : _buildPlaceholderBackground(),
                   ),
@@ -497,12 +525,15 @@ class _SubCategoryCardState extends State<_SubCategoryCard> {
                                 decoration: BoxDecoration(
                                   color: hasImage
                                       ? const Color(0xFFC9A227).withOpacity(0.8)
-                                      : const Color(0xFFC9A227).withOpacity(0.1),
+                                      : const Color(0xFFC9A227)
+                                          .withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Icon(
                                   Icons.checkroom_rounded,
-                                  color: hasImage ? Colors.white : const Color(0xFFC9A227),
+                                  color: hasImage
+                                      ? Colors.white
+                                      : const Color(0xFFC9A227),
                                   size: 14,
                                 ),
                               ),
@@ -513,7 +544,9 @@ class _SubCategoryCardState extends State<_SubCategoryCard> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color: hasImage ? Colors.white : const Color(0xFF131517),
+                                    color: hasImage
+                                        ? Colors.white
+                                        : const Color(0xFF131517),
                                     fontWeight: FontWeight.w900,
                                     fontSize: 13,
                                     letterSpacing: 0.5,
@@ -526,7 +559,9 @@ class _SubCategoryCardState extends State<_SubCategoryCard> {
                           Text(
                             'Curated Custom Fit',
                             style: TextStyle(
-                              color: hasImage ? Colors.grey[300] : Colors.grey[500],
+                              color: hasImage
+                                  ? Colors.grey[300]
+                                  : Colors.grey[500],
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                             ),

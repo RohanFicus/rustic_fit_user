@@ -13,10 +13,12 @@ class ApiService {
   static String normalizeImageUrl(String? url) {
     if (url == null || url.isEmpty) return '';
     if (url.contains('127.0.0.1:8080')) {
-      return url.replaceAll('http://127.0.0.1:8080', 'https://gwen-postmycotic-overtrustfully.ngrok-free.dev');
+      return url.replaceAll('http://127.0.0.1:8080',
+          'https://gwen-postmycotic-overtrustfully.ngrok-free.dev');
     }
     if (url.contains('localhost:8080')) {
-      return url.replaceAll('http://localhost:8080', 'https://gwen-postmycotic-overtrustfully.ngrok-free.dev');
+      return url.replaceAll('http://localhost:8080',
+          'https://gwen-postmycotic-overtrustfully.ngrok-free.dev');
     }
     return url;
   }
@@ -30,14 +32,15 @@ class ApiService {
       final url = Uri.parse(
           'https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/categories');
       final token = accessToken;
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-          'ngrok-skip-browser-warning': 'true',
-        },
-      );
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+        'ngrok-skip-browser-warning': 'true',
+      };
+
+      _logRequest('GET', url, headers: headers);
+      final response = await http.get(url, headers: headers);
+      _logResponse(response);
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -72,14 +75,15 @@ class ApiService {
       final url = Uri.parse(
           'https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/sub-categories?categoryId=$categoryId');
       final token = accessToken;
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-          'ngrok-skip-browser-warning': 'true',
-        },
-      );
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+        'ngrok-skip-browser-warning': 'true',
+      };
+
+      _logRequest('GET', url, headers: headers);
+      final response = await http.get(url, headers: headers);
+      _logResponse(response);
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -108,14 +112,15 @@ class ApiService {
       final url = Uri.parse(
           'https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/products/subcategory/$subCategoryId');
       final token = accessToken;
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-          'ngrok-skip-browser-warning': 'true',
-        },
-      );
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+        'ngrok-skip-browser-warning': 'true',
+      };
+
+      _logRequest('GET', url, headers: headers);
+      final response = await http.get(url, headers: headers);
+      _logResponse(response);
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -225,14 +230,15 @@ class ApiService {
       final url = Uri.parse(
           'https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/products');
       final token = accessToken;
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-          'ngrok-skip-browser-warning': 'true',
-        },
-      );
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+        'ngrok-skip-browser-warning': 'true',
+      };
+
+      _logRequest('GET', url, headers: headers);
+      final response = await http.get(url, headers: headers);
+      _logResponse(response);
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -342,14 +348,15 @@ class ApiService {
       final url = Uri.parse(
           'https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/order');
       final token = accessToken;
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-          'ngrok-skip-browser-warning': 'true',
-        },
-      );
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+        'ngrok-skip-browser-warning': 'true',
+      };
+
+      _logRequest('GET', url, headers: headers);
+      final response = await http.get(url, headers: headers);
+      _logResponse(response);
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -361,12 +368,14 @@ class ApiService {
             final orderNumber = item['orderNumber']?.toString() ?? '';
             final createdAtRaw = item['createdAt']?.toString() ?? '';
             final orderDate = DateTime.tryParse(createdAtRaw) ?? DateTime.now();
-            
+
             // Total amount
-            final totalAmount = double.tryParse(item['totalAmount']?.toString() ?? '') ?? 0.0;
-            
+            final totalAmount =
+                double.tryParse(item['totalAmount']?.toString() ?? '') ?? 0.0;
+
             // Order status
-            final orderStatusStr = item['orderStatus']?.toString() ?? 'ORDER_CREATED';
+            final orderStatusStr =
+                item['orderStatus']?.toString() ?? 'ORDER_CREATED';
             OrderStatus orderStatus = OrderStatus.pending;
             if (orderStatusStr == 'ORDER_CREATED') {
               orderStatus = OrderStatus.pending;
@@ -381,20 +390,24 @@ class ApiService {
             } else if (orderStatusStr.toUpperCase() == 'CANCELLED') {
               orderStatus = OrderStatus.cancelled;
             }
-            
+
             // Parse product details
             final prodMap = item['product'];
             Product? product;
             if (prodMap != null) {
               final prodId = prodMap['id']?.toString() ?? '';
-              final prodName = prodMap['productName']?.toString() ?? 'Bespoke Outfit';
-              final prodDesc = prodMap['description']?.toString() ?? 'Bespoke custom outfit';
+              final prodName =
+                  prodMap['productName']?.toString() ?? 'Bespoke Outfit';
+              final prodDesc =
+                  prodMap['description']?.toString() ?? 'Bespoke custom outfit';
               final rawProdImage = prodMap['productImage']?.toString() ?? '';
               final prodImage = normalizeImageUrl(rawProdImage);
               final fabric = prodMap['fabricDetails']?.toString() ?? 'Premium';
               final estimatedDays = prodMap['estimatedDeliveryDays'] is int
                   ? prodMap['estimatedDeliveryDays'] as int
-                  : (int.tryParse(prodMap['estimatedDeliveryDays']?.toString() ?? '') ?? 7);
+                  : (int.tryParse(
+                          prodMap['estimatedDeliveryDays']?.toString() ?? '') ??
+                      7);
 
               product = Product(
                 id: prodId,
@@ -402,7 +415,9 @@ class ApiService {
                 description: prodDesc,
                 category: prodMap['categoryName']?.toString() ?? 'Mens',
                 subCategoryName: prodMap['subCategoryName']?.toString(),
-                price: double.tryParse(prodMap['stitchingPrice']?.toString() ?? '') ?? 0.0,
+                price: double.tryParse(
+                        prodMap['stitchingPrice']?.toString() ?? '') ??
+                    0.0,
                 image: prodImage,
                 images: [prodImage],
                 sizes: [],
@@ -415,10 +430,12 @@ class ApiService {
                 reviewCount: 12,
               );
             }
-            
+
             final sizeMap = item['size'];
-            final sizeCode = sizeMap != null ? (sizeMap['sizeCode']?.toString() ?? 'M') : 'M';
-            
+            final sizeCode = sizeMap != null
+                ? (sizeMap['sizeCode']?.toString() ?? 'M')
+                : 'M';
+
             final addrMap = item['customerAddress'];
             String deliveryAddress = 'Home';
             if (addrMap != null) {
@@ -427,12 +444,16 @@ class ApiService {
               final city = addrMap['city']?.toString() ?? '';
               final state = addrMap['state']?.toString() ?? '';
               final pin = addrMap['pincode']?.toString() ?? '';
-              deliveryAddress = [line1, line2, city, state, pin].where((s) => s.isNotEmpty).join(', ');
+              deliveryAddress = [line1, line2, city, state, pin]
+                  .where((s) => s.isNotEmpty)
+                  .join(', ');
             }
 
             final estDeliveryRaw = item['estimatedDeliveryDate']?.toString();
-            final deliveryDate = estDeliveryRaw != null ? DateTime.tryParse(estDeliveryRaw) : null;
-            
+            final deliveryDate = estDeliveryRaw != null
+                ? DateTime.tryParse(estDeliveryRaw)
+                : null;
+
             if (product != null) {
               orders.add(
                 Order(
@@ -537,23 +558,26 @@ class ApiService {
     }
 
     try {
-      final response = await http.get(
-        Uri.parse(
-            'https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/profile'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-          'ngrok-skip-browser-warning': 'true',
-        },
-      );
+      final url = Uri.parse(
+          'https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/profile');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+        'ngrok-skip-browser-warning': 'true',
+      };
+
+      _logRequest('GET', url, headers: headers);
+      final response = await http.get(url, headers: headers);
+      _logResponse(response);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         if (responseData['status'] == true && responseData['data'] != null) {
           final rawData = responseData['data'];
-          final customerMap = (rawData is Map && rawData.containsKey('customer'))
-              ? rawData['customer']
-              : rawData;
+          final customerMap =
+              (rawData is Map && rawData.containsKey('customer'))
+                  ? rawData['customer']
+                  : rawData;
           if (customerMap != null) {
             final firstName = customerMap['firstName']?.toString() ?? '';
             final lastName = customerMap['lastName']?.toString() ?? '';
@@ -581,15 +605,19 @@ class ApiService {
 
             // Fetch addresses
             try {
-              final addrResponse = await http.get(
-                Uri.parse(
-                    'https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/profile/addresses'),
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': 'Bearer $token',
-                  'ngrok-skip-browser-warning': 'true',
-                },
-              );
+              final addrUrl = Uri.parse(
+                  'https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/profile/addresses');
+              final addrHeaders = {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $token',
+                'ngrok-skip-browser-warning': 'true',
+              };
+
+              _logRequest('GET', addrUrl, headers: addrHeaders);
+              final addrResponse =
+                  await http.get(addrUrl, headers: addrHeaders);
+              _logResponse(addrResponse);
+
               if (addrResponse.statusCode == 200) {
                 final addrData = jsonDecode(addrResponse.body);
                 if (addrData['status'] == true && addrData['data'] is List) {
@@ -632,14 +660,16 @@ class ApiService {
       final token = accessToken;
       final url = Uri.parse(
           'https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/service-locations');
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-          'ngrok-skip-browser-warning': 'true',
-        },
-      );
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+        'ngrok-skip-browser-warning': 'true',
+      };
+
+      _logRequest('GET', url, headers: headers);
+      final response = await http.get(url, headers: headers);
+      _logResponse(response);
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['status'] == true && data['data'] is List) {
@@ -716,14 +746,15 @@ class ApiService {
         }
       }
 
-      print('Sending createOrder request to $url');
-      print('Fields: ${request.fields}');
+      _logRequest(request.method, url,
+          headers: request.headers,
+          fields: request.fields,
+          files: request.files);
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
-      print('createOrder response code: ${response.statusCode}');
-      print('createOrder response body: ${response.body}');
+      _logResponse(response);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
@@ -745,23 +776,21 @@ class ApiService {
       final token = accessToken;
       final url = Uri.parse(
           'https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/order/payment/verify');
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-          'ngrok-skip-browser-warning': 'true',
-        },
-        body: jsonEncode({
-          'orderNumber': orderNumber,
-          'razorpayOrderId': razorpayOrderId,
-          'razorpayPaymentId': razorpayPaymentId,
-          'razorpaySignature': razorpaySignature,
-        }),
-      );
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+        'ngrok-skip-browser-warning': 'true',
+      };
+      final body = jsonEncode({
+        'orderNumber': orderNumber,
+        'razorpayOrderId': razorpayOrderId,
+        'razorpayPaymentId': razorpayPaymentId,
+        'razorpaySignature': razorpaySignature,
+      });
 
-      print('verifyOrderPayment response code: ${response.statusCode}');
-      print('verifyOrderPayment response body: ${response.body}');
+      _logRequest('POST', url, headers: headers, body: body);
+      final response = await http.post(url, headers: headers, body: body);
+      _logResponse(response);
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -884,5 +913,49 @@ class ApiService {
       'https://plus.unsplash.com/premium_photo-1768823132441-b49d729ae5ca?q=80&w=2070&auto=format&fit=crop',
       'https://plus.unsplash.com/premium_photo-1768823132559-37639ef3f28a?q=80&w=2070&auto=format&fit=crop',
     ];
+  }
+
+  // ==========================================
+  // LOGGING HELPERS
+  // ==========================================
+
+  static void _logRequest(String method, Uri url,
+      {Map<String, String>? headers,
+      Object? body,
+      Map<String, String>? fields,
+      List<http.MultipartFile>? files}) {
+    debugPrint('\n---------------- API REQUEST ----------------');
+    debugPrint('Method: $method');
+    debugPrint('URL: $url');
+    if (headers != null && headers.isNotEmpty) {
+      final maskedHeaders = Map<String, String>.from(headers);
+      if (maskedHeaders.containsKey('Authorization')) {
+        final token = maskedHeaders['Authorization']!;
+        if (token.length > 15) {
+          maskedHeaders['Authorization'] =
+              '${token.substring(0, 10)}...${token.substring(token.length - 5)}';
+        }
+      }
+      debugPrint('Headers: $maskedHeaders');
+    }
+    if (body != null) {
+      debugPrint('Body: $body');
+    }
+    if (fields != null && fields.isNotEmpty) {
+      debugPrint('Fields: $fields');
+    }
+    if (files != null && files.isNotEmpty) {
+      final fileNames = files.map((f) => f.filename).toList();
+      debugPrint('Files: $fileNames');
+    }
+    debugPrint('---------------------------------------------\n');
+  }
+
+  static void _logResponse(http.Response response) {
+    debugPrint('\n---------------- API RESPONSE ---------------');
+    debugPrint('URL: ${response.request?.url}');
+    debugPrint('Status Code: ${response.statusCode}');
+    debugPrint('Body: ${response.body}');
+    debugPrint('---------------------------------------------\n');
   }
 }

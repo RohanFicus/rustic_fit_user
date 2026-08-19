@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:rustic_fit/my_orders_screen.dart';
+import 'package:rustic_fit/screens/mobile_auth_screen.dart';
 import 'package:rustic_fit/screens/profile_screen.dart';
 import 'package:rustic_fit/screens/schedule_screen.dart';
-import 'package:rustic_fit/screens/mobile_auth_screen.dart';
 import 'package:rustic_fit/services/api_service.dart';
 
 import '../widgets/custom_bottom_nav.dart';
@@ -55,7 +56,8 @@ class _MainContainerState extends State<MainContainer> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out of your account?'),
+        content:
+            const Text('Are you sure you want to sign out of your account?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -68,12 +70,14 @@ class _MainContainerState extends State<MainContainer> {
               if (mounted) {
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => const MobileAuthScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const MobileAuthScreen()),
                   (route) => false,
                 );
               }
             },
-            child: const Text('Sign Out', style: TextStyle(color: Colors.redAccent)),
+            child: const Text('Sign Out',
+                style: TextStyle(color: Colors.redAccent)),
           ),
         ],
       ),
@@ -85,41 +89,50 @@ class _MainContainerState extends State<MainContainer> {
     final size = MediaQuery.of(context).size;
     final isWide = size.width > 900;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFFDFCFB),
-      body: Row(
-        children: [
-          if (isWide) _buildSidebar(),
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 400),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0.01, 0),
-                      end: Offset.zero,
-                    ).animate(CurvedAnimation(
-                        parent: animation, curve: Curves.easeOut)),
-                    child: child,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFFDFCFB),
+        extendBody: true,
+        body: Row(
+          children: [
+            if (isWide) _buildSidebar(),
+            Expanded(
+              child: SafeArea(
+                top: !isWide,
+                bottom: false,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 400),
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0.01, 0),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(
+                            parent: animation, curve: Curves.easeOut)),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: KeyedSubtree(
+                    key: ValueKey<int>(_currentIndex),
+                    child: _screens[_currentIndex],
                   ),
-                );
-              },
-              child: KeyedSubtree(
-                key: ValueKey<int>(_currentIndex),
-                child: _screens[_currentIndex],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
+        bottomNavigationBar: !isWide
+            ? CustomBottomNav(
+                currentIndex: _currentIndex,
+                onTap: _onTabTapped,
+              )
+            : null,
       ),
-      bottomNavigationBar: !isWide
-          ? CustomBottomNav(
-              currentIndex: _currentIndex,
-              onTap: _onTabTapped,
-            )
-          : null,
     );
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rustic_fit/screens/fitting_details_screen.dart';
 
 import '../models/dummy_data.dart';
+import '../widgets/app_network_image.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
@@ -30,7 +31,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     } else if (widget.product.image.isNotEmpty) {
       _productImages.add(widget.product.image);
     }
-    
+
     // Fallback images if list is empty or small
     if (_productImages.isEmpty) {
       _productImages.add('');
@@ -43,7 +44,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
 
     // Initialize selected size
-    if (widget.product.rawProductSizes != null && widget.product.rawProductSizes!.isNotEmpty) {
+    if (widget.product.rawProductSizes != null &&
+        widget.product.rawProductSizes!.isNotEmpty) {
       _selectedSize = widget.product.rawProductSizes!.first;
     }
   }
@@ -74,16 +76,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildNetworkImage(String url, {required double width, required double height, required BoxFit fit}) {
+  Widget _buildNetworkImage(String url,
+      {required double width, required double height, required BoxFit fit}) {
     if (url.isEmpty || (!url.startsWith('http') && !url.startsWith('assets'))) {
       return _buildPlaceholderImage();
     }
-    return Image.network(
-      url,
+    return AppNetworkImage(
+      imageUrl: url,
       width: width,
       height: height,
       fit: fit,
-      errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
     );
   }
 
@@ -186,7 +188,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _buildSliverAppBar(BuildContext context) {
     return SliverAppBar(
-      expandedHeight: 500,
+      expandedHeight: 350,
       pinned: true,
       backgroundColor: darkBrown,
       elevation: 0,
@@ -330,12 +332,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 Row(
                   children: [
                     Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: primaryGold.withOpacity(0.08),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: primaryGold.withOpacity(0.15), width: 1),
+                        border: Border.all(
+                            color: primaryGold.withOpacity(0.15), width: 1),
                       ),
                       child: Text(
                         widget.product.category.toUpperCase(),
@@ -351,12 +354,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         widget.product.subCategoryName!.isNotEmpty) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: darkBrown.withOpacity(0.05),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: darkBrown.withOpacity(0.1), width: 1),
+                          border: Border.all(
+                              color: darkBrown.withOpacity(0.1), width: 1),
                         ),
                         child: Text(
                           widget.product.subCategoryName!.toUpperCase(),
@@ -423,7 +427,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             color: primaryGold,
           ),
         ),
-        if (widget.product.rawProductSizes != null && widget.product.rawProductSizes!.isNotEmpty) ...[
+        if (widget.product.rawProductSizes != null &&
+            widget.product.rawProductSizes!.isNotEmpty) ...[
           const SizedBox(height: 32),
           const Text(
             "Select Size",
@@ -439,7 +444,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             runSpacing: 12,
             children: widget.product.rawProductSizes!.map((sizeObj) {
               final sizeCode = sizeObj['sizeCode']?.toString() ?? '';
-              final isSelected = _selectedSize != null && _selectedSize!['id'] == sizeObj['id'];
+              final isSelected = _selectedSize != null &&
+                  _selectedSize!['id'] == sizeObj['id'];
               return GestureDetector(
                 onTap: () {
                   setState(() {
@@ -448,7 +454,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   decoration: BoxDecoration(
                     color: isSelected ? primaryGold : Colors.white,
                     borderRadius: BorderRadius.circular(12),
@@ -490,7 +497,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
         const SizedBox(height: 12),
         Text(
-          widget.product.description.isNotEmpty ? widget.product.description : 'Bespoke custom outfit designed for a perfect fit.',
+          widget.product.description.isNotEmpty
+              ? widget.product.description
+              : 'Bespoke custom outfit designed for a perfect fit.',
           style: TextStyle(
             fontSize: 15,
             color: Colors.grey[600],
@@ -563,11 +572,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           const SizedBox(height: 24),
           Row(
             children: [
-              Expanded(child: _buildSpecItem("Fabric", widget.product.fabric.isNotEmpty ? widget.product.fabric : 'Premium')),
+              Expanded(
+                  child: _buildSpecItem(
+                      "Fabric",
+                      widget.product.fabric.isNotEmpty
+                          ? widget.product.fabric
+                          : 'Premium')),
               _buildVerticalDivider(),
-              Expanded(child: _buildSpecItem("Color", widget.product.color.isNotEmpty ? widget.product.color : 'Custom')),
+              Expanded(
+                  child: _buildSpecItem(
+                      "Color",
+                      widget.product.color.isNotEmpty
+                          ? widget.product.color
+                          : 'Custom')),
               _buildVerticalDivider(),
-              Expanded(child: _buildSpecItem("Type", widget.product.type.isNotEmpty ? widget.product.type : 'Stitch')),
+              Expanded(
+                  child: _buildSpecItem(
+                      "Type",
+                      widget.product.type.isNotEmpty
+                          ? widget.product.type
+                          : 'Stitch')),
             ],
           ),
         ],
@@ -664,7 +688,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         color: isWide ? Colors.transparent : Colors.white,
         border: isWide
             ? null
-            : Border(top: BorderSide(color: const Color(0xFFF1F3F5), width: 1.5)),
+            : Border(
+                top: BorderSide(color: const Color(0xFFF1F3F5), width: 1.5)),
         boxShadow: isWide
             ? null
             : [
@@ -709,11 +734,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        FittingDetailsScreen(
-                          product: widget.product,
-                          selectedSize: _selectedSize,
-                        ),
+                    builder: (context) => FittingDetailsScreen(
+                      product: widget.product,
+                      selectedSize: _selectedSize,
+                    ),
                   ),
                 );
               },

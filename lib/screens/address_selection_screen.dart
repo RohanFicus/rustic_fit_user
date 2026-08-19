@@ -1,8 +1,9 @@
-import 'dart:io';
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+
 import '../models/dummy_data.dart';
 import '../services/api_service.dart';
 import 'payment_screen.dart';
@@ -54,7 +55,8 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
     setState(() => _isLoading = true);
     try {
       final token = ApiService.accessToken;
-      final url = Uri.parse('https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/profile/addresses');
+      final url = Uri.parse(
+          'https://gwen-postmycotic-overtrustfully.ngrok-free.dev/api/v1/customer/profile/addresses');
       final response = await http.get(
         url,
         headers: {
@@ -73,7 +75,7 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
               _apiAddresses = List<Map<String, dynamic>>.from(list);
             });
           }
-          
+
           // Also sync with DummyData.currentUser.savedAddresses
           final List<String> loaded = [];
           for (var item in list) {
@@ -82,8 +84,9 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
             final city = item['city'] ?? '';
             final state = item['state'] ?? '';
             final pincode = item['pincode'] ?? '';
-            
-            final fullAddress = "$line1${line2.isNotEmpty ? ', ' + line2 : ''}, $city, $state $pincode";
+
+            final fullAddress =
+                "$line1${line2.isNotEmpty ? ', ' + line2 : ''}, $city, $state $pincode";
             loaded.add(fullAddress);
           }
           DummyData.currentUser.savedAddresses = loaded;
@@ -111,9 +114,10 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
         String mainAddr = parts.first;
         String cityState = parts.length > 1 ? parts.sublist(1).join(', ') : '';
 
-        String label = idx == 0 ? 'Home' : (idx == 1 ? 'Office' : 'Location ${idx + 1}');
+        String label =
+            idx == 0 ? 'Home' : (idx == 1 ? 'Office' : 'Location ${idx + 1}');
 
-        return {
+        return <String, String>{
           "id": "",
           "type": label,
           "address": mainAddr,
@@ -131,9 +135,10 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
       final city = item['city']?.toString() ?? '';
       final state = item['state']?.toString() ?? '';
       final pincode = item['pincode']?.toString() ?? '';
-      final fullAddr = "$line1${line2.isNotEmpty ? ', ' + line2 : ''}, $city, $state $pincode";
-      
-      return {
+      final fullAddr =
+          "$line1${line2.isNotEmpty ? ', ' + line2 : ''}, $city, $state $pincode";
+
+      return <String, String>{
         "id": item['id']?.toString() ?? '',
         "type": item['addressType']?.toString() ?? 'Home',
         "address": line1,
@@ -207,12 +212,14 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
         elevation: 0,
         centerTitle: false,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: darkBrown, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: darkBrown, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           "Select Address",
-          style: TextStyle(color: darkBrown, fontWeight: FontWeight.w900, fontSize: 18),
+          style: TextStyle(
+              color: darkBrown, fontWeight: FontWeight.w900, fontSize: 18),
         ),
       ),
       body: Column(
@@ -220,7 +227,8 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
           _buildProgressStepper(),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: primaryGold))
+                ? const Center(
+                    child: CircularProgressIndicator(color: primaryGold))
                 : (isWide ? _buildWideLayout() : _buildMobileLayout()),
           ),
         ],
@@ -261,10 +269,19 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
             color: isCompleted || isActive ? primaryGold : Colors.white,
             shape: BoxShape.circle,
             border: Border.all(
-              color: isCompleted || isActive ? primaryGold : const Color(0xFFE9ECEF),
+              color: isCompleted || isActive
+                  ? primaryGold
+                  : const Color(0xFFE9ECEF),
               width: 2,
             ),
-            boxShadow: isActive ? [BoxShadow(color: primaryGold.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))] : null,
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                        color: primaryGold.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4))
+                  ]
+                : null,
           ),
           child: Center(
             child: isCompleted
@@ -308,9 +325,13 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionHeader("Where should we ship?", Icons.local_shipping_outlined),
+          _buildSectionHeader(
+              "Where should we ship?", Icons.local_shipping_outlined),
           const SizedBox(height: 24),
-          ..._addresses.asMap().entries.map((entry) => _buildAddressCard(entry.key, false)),
+          ..._addresses
+              .asMap()
+              .entries
+              .map((entry) => _buildAddressCard(entry.key, false)),
           const SizedBox(height: 16),
           _buildAddNewCard(false),
           const SizedBox(height: 32),
@@ -333,7 +354,8 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSectionHeader("Select Delivery Destination", Icons.local_shipping_outlined),
+                _buildSectionHeader("Select Delivery Destination",
+                    Icons.local_shipping_outlined),
                 const SizedBox(height: 32),
                 GridView.builder(
                   shrinkWrap: true,
@@ -346,7 +368,8 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
                   ),
                   itemCount: _addresses.length + 1,
                   itemBuilder: (context, index) {
-                    if (index == _addresses.length) return _buildAddNewCard(true);
+                    if (index == _addresses.length)
+                      return _buildAddNewCard(true);
                     return _buildAddressCard(index, true);
                   },
                 ),
@@ -376,7 +399,8 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
         const SizedBox(width: 12),
         Text(
           title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: darkBrown),
+          style: const TextStyle(
+              fontSize: 18, fontWeight: FontWeight.w900, color: darkBrown),
         ),
       ],
     );
@@ -401,7 +425,9 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: isSelected ? primaryGold.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.02),
+              color: isSelected
+                  ? primaryGold.withValues(alpha: 0.1)
+                  : Colors.black.withValues(alpha: 0.02),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -414,13 +440,14 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: isSelected ? primaryGold : const Color(0xFFF8F9FA),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    address['type']!.toUpperCase(),
+                    (address['type'] ?? 'Home').toUpperCase(),
                     style: TextStyle(
                       color: isSelected ? Colors.white : darkBrown,
                       fontSize: 10,
@@ -430,20 +457,28 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
                   ),
                 ),
                 if (isSelected)
-                  const Icon(Icons.check_circle_rounded, color: primaryGold, size: 22),
+                  const Icon(Icons.check_circle_rounded,
+                      color: primaryGold, size: 22),
               ],
             ),
             const SizedBox(height: 20),
             Text(
-              address['address']!,
+              address['address'] ?? '',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: darkBrown, height: 1.4),
+              style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                  color: darkBrown,
+                  height: 1.4),
             ),
             const SizedBox(height: 4),
             Text(
-              address['city']!,
-              style: TextStyle(color: Colors.grey[500], fontSize: 13, fontWeight: FontWeight.w500),
+              address['city'] ?? '',
+              style: TextStyle(
+                  color: Colors.grey[500],
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500),
             ),
             const Spacer(),
             Row(
@@ -451,8 +486,11 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
                 Icon(Icons.phone_rounded, size: 14, color: Colors.grey[400]),
                 const SizedBox(width: 8),
                 Text(
-                  address['phone']!,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 13, fontWeight: FontWeight.w600),
+                  address['phone'] ?? '',
+                  style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -470,7 +508,8 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0xFFE9ECEF), style: BorderStyle.solid),
+          border: Border.all(
+              color: const Color(0xFFE9ECEF), style: BorderStyle.solid),
         ),
         child: Center(
           child: Column(
@@ -478,18 +517,28 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: primaryGold.withValues(alpha: 0.1), shape: BoxShape.circle),
-                child: const Icon(Icons.add_rounded, color: primaryGold, size: 24),
+                decoration: BoxDecoration(
+                    color: primaryGold.withValues(alpha: 0.1),
+                    shape: BoxShape.circle),
+                child:
+                    const Icon(Icons.add_rounded, color: primaryGold, size: 24),
               ),
               if (isWide) ...[
                 const SizedBox(height: 16),
                 const Text(
                   "Add New Address",
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: darkBrown),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                      color: darkBrown),
                 ),
               ] else ...[
                 const SizedBox(height: 8),
-                const Text("Add New Address", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: darkBrown)),
+                const Text("Add New Address",
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: darkBrown)),
               ],
             ],
           ),
@@ -504,12 +553,18 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
       children: [
         const Text(
           "Quick Actions",
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: darkBrown, letterSpacing: 0.5),
+          style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              color: darkBrown,
+              letterSpacing: 0.5),
         ),
         const SizedBox(height: 16),
-        _buildActionTile(Icons.my_location_rounded, "Use Current Location", "Detect via GPS"),
+        _buildActionTile(Icons.my_location_rounded, "Use Current Location",
+            "Detect via GPS"),
         const SizedBox(height: 12),
-        _buildActionTile(Icons.storefront_rounded, "Pick up from Studio", "Visit our Beverly Hills boutique"),
+        _buildActionTile(Icons.storefront_rounded, "Pick up from Studio",
+            "Visit our Beverly Hills boutique"),
       ],
     );
   }
@@ -526,7 +581,9 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: const Color(0xFFF8F9FA), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(
+                color: const Color(0xFFF8F9FA),
+                borderRadius: BorderRadius.circular(12)),
             child: Icon(icon, color: darkBrown, size: 20),
           ),
           const SizedBox(width: 16),
@@ -534,8 +591,13 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: darkBrown)),
-                Text(subtitle, style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                Text(title,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        color: darkBrown)),
+                Text(subtitle,
+                    style: TextStyle(color: Colors.grey[500], fontSize: 12)),
               ],
             ),
           ),
@@ -593,7 +655,8 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
         children: [
           const Text(
             "Selected Garment",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: darkBrown),
+            style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w900, color: darkBrown),
           ),
           const SizedBox(height: 24),
           Row(
@@ -605,7 +668,8 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
                   width: 80,
                   height: 100,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(80, 100),
+                  errorBuilder: (context, error, stackTrace) =>
+                      _buildPlaceholderImage(80, 100),
                 ),
               ),
               const SizedBox(width: 20),
@@ -613,16 +677,26 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(widget.product.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: darkBrown)),
+                    Text(widget.product.name,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                            color: darkBrown)),
                     const SizedBox(height: 8),
                     Text(
                       "${widget.customFabric ?? widget.product.fabric} • ${widget.customType ?? widget.product.type}",
-                      style: TextStyle(color: Colors.grey[500], fontSize: 13, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                          color: Colors.grey[500],
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       DummyData.formatPrice(widget.product.price),
-                      style: const TextStyle(color: primaryGold, fontWeight: FontWeight.w900, fontSize: 18),
+                      style: const TextStyle(
+                          color: primaryGold,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18),
                     ),
                   ],
                 ),
@@ -639,7 +713,9 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
       padding: EdgeInsets.all(isWide ? 0 : 24),
       decoration: BoxDecoration(
         color: isWide ? Colors.transparent : Colors.white,
-        border: isWide ? null : Border(top: BorderSide(color: const Color(0xFFE9ECEF))),
+        border: isWide
+            ? null
+            : Border(top: BorderSide(color: const Color(0xFFE9ECEF))),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -679,7 +755,8 @@ class _AddressSelectionScreenState extends State<AddressSelectionScreen> {
                 backgroundColor: primaryGold,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 20),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
                 elevation: 0,
               ),
               child: const Text(

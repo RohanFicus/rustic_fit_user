@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/dummy_data.dart';
+import '../widgets/app_network_image.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final Order order;
@@ -284,8 +285,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.network(item.product.image,
-                width: 60, height: 80, fit: BoxFit.cover),
+            child: AppNetworkImage(
+                imageUrl: item.product.image,
+                width: 60,
+                height: 80,
+                fit: BoxFit.cover),
           ),
           const SizedBox(width: 20),
           Expanded(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:rustic_fit/models/dummy_data.dart';
+
 import '../services/api_service.dart';
+import '../widgets/app_network_image.dart';
 import 'category_products_screen.dart';
 
 class ScheduleScreen extends StatefulWidget {
@@ -71,7 +73,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ];
           _isLoadingCategories = false;
         });
-        
+
         _onCategorySelected("All");
       }
     } catch (e) {
@@ -107,21 +109,21 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       _isLoadingSubCategories = true;
     });
     try {
-      final cats = DummyData.categories.isNotEmpty 
-          ? DummyData.categories 
+      final cats = DummyData.categories.isNotEmpty
+          ? DummyData.categories
           : await ApiService.fetchCategories();
-      
+
       List<SubCategory> allSubs = [];
       for (var cat in cats) {
         final subs = await ApiService.fetchSubCategories(cat.id);
         allSubs.addAll(subs);
       }
-      
+
       final uniqueSubs = <String, SubCategory>{};
       for (var sub in allSubs) {
         uniqueSubs[sub.id] = sub;
       }
-      
+
       if (mounted) {
         setState(() {
           _subCategories = uniqueSubs.values.toList();
@@ -161,7 +163,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       return _subCategories;
     }
     return _subCategories
-        .where((sub) => sub.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .where((sub) =>
+            sub.name.toLowerCase().contains(_searchQuery.toLowerCase()))
         .toList();
   }
 
@@ -212,7 +215,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             const Spacer(),
           ],
           Expanded(
-            flex: isWide ? 0 : 1,
+            flex: isWide ? 0 : 2,
             child: _buildSearchBar(isWide),
           ),
           if (isWide) ...[
@@ -229,7 +232,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget _buildSearchBar(bool isWide) {
     return Container(
       width: isWide ? 400 : double.infinity,
-      height: 48,
+      height: 38,
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FA),
         borderRadius: BorderRadius.circular(16),
@@ -241,12 +244,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           setState(() => _searchQuery = v);
         },
         decoration: InputDecoration(
-          hintText: 'Search styles, fabrics, designs...',
-          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+          hintText: 'Search...',
+          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
           prefixIcon: const Icon(Icons.search_rounded,
               size: 20, color: Color(0xFFC9A227)),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 13),
+          border: OutlineInputBorder(
+              borderSide: BorderSide(color: const Color(0xFFE9ECEF))),
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
         ),
       ),
     );
@@ -277,7 +281,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           child: SizedBox(
             width: 24,
             height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2.5, color: primaryGold),
+            child:
+                CircularProgressIndicator(strokeWidth: 2.5, color: primaryGold),
           ),
         ),
       );
@@ -332,8 +337,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             child: Text(
                               cat['name'],
                               style: TextStyle(
-                                color: isSelected ? Colors.white : const Color(0xFF131517),
-                                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                                color: isSelected
+                                    ? Colors.white
+                                    : const Color(0xFF131517),
+                                fontWeight: isSelected
+                                    ? FontWeight.w900
+                                    : FontWeight.w700,
                                 fontSize: 14,
                               ),
                             ),
@@ -356,8 +365,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: isSelected ? Colors.white : const Color(0xFF131517),
-                              fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                              color: isSelected
+                                  ? Colors.white
+                                  : const Color(0xFF131517),
+                              fontWeight: isSelected
+                                  ? FontWeight.w900
+                                  : FontWeight.w700,
                               fontSize: 11,
                             ),
                           ),
@@ -385,13 +398,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.style_outlined, size: 64, color: Color(0xFFE9ECEF)),
+            const Icon(Icons.style_outlined,
+                size: 64, color: Color(0xFFE9ECEF)),
             const SizedBox(height: 16),
             Text(
-              _searchQuery.isNotEmpty 
+              _searchQuery.isNotEmpty
                   ? 'No styles matching "$_searchQuery"'
                   : 'No styles available in $_selectedCategory',
-              style: TextStyle(color: Colors.grey[600], fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -446,7 +463,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => CategoryProductsScreen(subCategory: sub),
+                        builder: (context) =>
+                            CategoryProductsScreen(subCategory: sub),
                       ),
                     );
                   },
@@ -476,7 +494,8 @@ class _SubCategoryCardState extends State<_SubCategoryCard> {
   @override
   Widget build(BuildContext context) {
     final imagePath = widget.sub.image;
-    final hasImage = imagePath.isNotEmpty && (imagePath.startsWith('http') || imagePath.startsWith('assets'));
+    final hasImage = imagePath.isNotEmpty &&
+        (imagePath.startsWith('http') || imagePath.startsWith('assets'));
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -492,7 +511,9 @@ class _SubCategoryCardState extends State<_SubCategoryCard> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: _isHovered ? const Color(0xFFC9A227) : const Color(0xFFF1F3F5),
+                color: _isHovered
+                    ? const Color(0xFFC9A227)
+                    : const Color(0xFFF1F3F5),
                 width: 1.5,
               ),
               boxShadow: [
@@ -511,10 +532,9 @@ class _SubCategoryCardState extends State<_SubCategoryCard> {
                 children: [
                   Positioned.fill(
                     child: hasImage
-                        ? Image.network(
-                            imagePath,
+                        ? AppNetworkImage(
+                            imageUrl: imagePath,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => _buildPlaceholderBackground(),
                           )
                         : _buildPlaceholderBackground(),
                   ),
@@ -566,12 +586,15 @@ class _SubCategoryCardState extends State<_SubCategoryCard> {
                                 decoration: BoxDecoration(
                                   color: hasImage
                                       ? const Color(0xFFC9A227).withOpacity(0.8)
-                                      : const Color(0xFFC9A227).withOpacity(0.1),
+                                      : const Color(0xFFC9A227)
+                                          .withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Icon(
                                   Icons.checkroom_rounded,
-                                  color: hasImage ? Colors.white : const Color(0xFFC9A227),
+                                  color: hasImage
+                                      ? Colors.white
+                                      : const Color(0xFFC9A227),
                                   size: 14,
                                 ),
                               ),
@@ -582,7 +605,9 @@ class _SubCategoryCardState extends State<_SubCategoryCard> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color: hasImage ? Colors.white : const Color(0xFF131517),
+                                    color: hasImage
+                                        ? Colors.white
+                                        : const Color(0xFF131517),
                                     fontWeight: FontWeight.w900,
                                     fontSize: 13,
                                     letterSpacing: 0.5,
@@ -595,7 +620,9 @@ class _SubCategoryCardState extends State<_SubCategoryCard> {
                           Text(
                             'Curated Custom Fit',
                             style: TextStyle(
-                              color: hasImage ? Colors.grey[300] : Colors.grey[500],
+                              color: hasImage
+                                  ? Colors.grey[300]
+                                  : Colors.grey[500],
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                             ),

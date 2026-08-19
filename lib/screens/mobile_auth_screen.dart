@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 
@@ -152,85 +153,90 @@ class _MobileAuthScreenState extends State<MobileAuthScreen> {
     final size = MediaQuery.of(context).size;
     final isWide = size.width > 900;
 
-    return Scaffold(
-      backgroundColor: darkBrown,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Background Image with dark overlay
-          Image.asset(
-            'assets/images/banners/banner_1.png',
-            fit: BoxFit.cover,
-          ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.7),
-                  Colors.black.withValues(alpha: 0.8),
-                  darkBrown,
-                ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: darkBrown,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Background Image with dark overlay
+            Image.asset(
+              'assets/images/banners/banner_1.png',
+              fit: BoxFit.cover,
+            ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.7),
+                    Colors.black.withValues(alpha: 0.8),
+                    darkBrown,
+                  ],
+                ),
               ),
             ),
-          ),
 
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: isWide ? 1000 : 450,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(32),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(32),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          width: 1,
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: isWide ? 1000 : 450,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(32),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(32),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            width: 1,
+                          ),
                         ),
+                        child: isWide
+                            ? Row(
+                                children: [
+                                  Expanded(child: _buildDecorativeSide()),
+                                  Expanded(child: _buildFormSide()),
+                                ],
+                              )
+                            : Column(
+                                children: [
+                                  _buildDecorativeSide(height: 300),
+                                  _buildFormSide(),
+                                ],
+                              ),
                       ),
-                      child: isWide
-                          ? Row(
-                              children: [
-                                Expanded(child: _buildDecorativeSide()),
-                                Expanded(child: _buildFormSide()),
-                              ],
-                            )
-                          : Column(
-                              children: [
-                                _buildDecorativeSide(height: 250),
-                                _buildFormSide(),
-                              ],
-                            ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildDecorativeSide({double? height}) {
+    final isMobile = height != null;
     return Container(
       height: height ?? 650,
-      padding: const EdgeInsets.all(48),
+      padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 24 : 48, vertical: isMobile ? 20 : 48),
       decoration: BoxDecoration(
         color: primaryGold.withValues(alpha: 0.1),
         border: Border(
-          right: height == null
+          right: !isMobile
               ? BorderSide(color: Colors.white.withValues(alpha: 0.1))
               : BorderSide.none,
-          bottom: height != null
+          bottom: isMobile
               ? BorderSide(color: Colors.white.withValues(alpha: 0.1))
               : BorderSide.none,
         ),
@@ -239,7 +245,7 @@ class _MobileAuthScreenState extends State<MobileAuthScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(isMobile ? 12 : 20),
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.3),
               shape: BoxShape.circle,
@@ -247,10 +253,10 @@ class _MobileAuthScreenState extends State<MobileAuthScreen> {
             ),
             child: Image.asset(
               'assets/images/logo.png',
-              height: height != null ? 60 : 120,
+              height: isMobile ? 45 : 120,
             ),
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: isMobile ? 20 : 32),
           const Text(
             'RUSTIC FIT',
             style: TextStyle(
@@ -260,7 +266,7 @@ class _MobileAuthScreenState extends State<MobileAuthScreen> {
               letterSpacing: 8,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: isMobile ? 6 : 12),
           Text(
             'BESPOKE TAILORING STUDIO',
             textAlign: TextAlign.center,
@@ -271,7 +277,7 @@ class _MobileAuthScreenState extends State<MobileAuthScreen> {
               letterSpacing: 3,
             ),
           ),
-          if (height == null) ...[
+          if (!isMobile) ...[
             const Spacer(),
             Text(
               'Experience the luxury of perfectly fitted clothes, crafted just for you.',
@@ -289,8 +295,11 @@ class _MobileAuthScreenState extends State<MobileAuthScreen> {
   }
 
   Widget _buildFormSide() {
+    final size = MediaQuery.of(context).size;
+    final isWide = size.width > 900;
+
     return Padding(
-      padding: const EdgeInsets.all(40),
+      padding: EdgeInsets.all(isWide ? 40 : 24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,7 +377,7 @@ class _MobileAuthScreenState extends State<MobileAuthScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 6),
               Expanded(
                 child: TextField(
                   controller: _phoneController,

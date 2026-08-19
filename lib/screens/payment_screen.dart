@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../widgets/app_network_image.dart';
 import '../models/dummy_data.dart';
 import '../services/api_service.dart';
 import 'main_container.dart';
@@ -299,13 +300,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  widget.product.image,
+                child: AppNetworkImage(
+                  imageUrl: widget.product.image,
                   width: 80,
                   height: 100,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) =>
-                      _buildPlaceholderImage(80, 100),
                 ),
               ),
               const SizedBox(width: 20),
@@ -566,10 +565,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       responseMap['status'] == true &&
                       responseMap['data'] != null) {
                     final data = responseMap['data'];
-                    final orderData = data['order'] != null ? data['order'] : data;
+                    final orderData =
+                        data['order'] != null ? data['order'] : data;
                     final orderId = orderData['id']?.toString() ?? '';
-                    final orderNumber = orderData['orderNumber']?.toString() ?? '';
-                    final createdAtRaw = orderData['createdAt']?.toString() ?? '';
+                    final orderNumber =
+                        orderData['orderNumber']?.toString() ?? '';
+                    final createdAtRaw =
+                        orderData['createdAt']?.toString() ?? '';
                     final orderDate =
                         DateTime.tryParse(createdAtRaw) ?? DateTime.now();
                     final totalAmount = double.tryParse(
@@ -639,7 +641,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             razorpaySignature: 'test_signature',
                           );
                         } catch (e) {
-                          print('Payment verification error during checkout: $e');
+                          print(
+                              'Payment verification error during checkout: $e');
                         }
                       }
                     }

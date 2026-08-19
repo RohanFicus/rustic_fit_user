@@ -11,6 +11,21 @@ import 'theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Force portrait mode
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
+  // Set default system overlay style (dark icons)
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+    ),
+  );
+
   // Pre-load data from API into DummyData memory cache
   try {
     final dbCategories = await ApiService.fetchCategories();
@@ -39,13 +54,6 @@ class RusticFitApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarBrightness: Brightness.light,
-        statusBarIconBrightness: Brightness.dark,
-      ),
-    );
-
     return MaterialApp(
       title: 'RusticFit by Kim',
       theme: AppTheme.light(),
@@ -57,9 +65,6 @@ class RusticFitApp extends StatelessWidget {
           PointerDeviceKind.stylus,
         },
       ),
-      builder: (context, child) {
-        return child ?? const SizedBox.shrink();
-      },
       home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
     );

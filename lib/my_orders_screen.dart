@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:rustic_fit/widgets/app_network_image.dart';
 
 import 'models/dummy_data.dart';
 import 'screens/home_screen.dart';
 import 'screens/order_detail_screen.dart';
-import 'services/data_service.dart';
 import 'services/api_service.dart';
 
 class MyOrdersScreen extends StatefulWidget {
@@ -34,7 +34,8 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       _errorMessage = null;
     });
     try {
-      final orders = await ApiService.fetchCustomerOrders(DummyData.currentUser.id);
+      final orders =
+          await ApiService.fetchCustomerOrders(DummyData.currentUser.id);
       if (!mounted) return;
       setState(() {
         _apiOrders = orders;
@@ -82,27 +83,60 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         vertical: 20,
       ),
       color: Colors.white,
-      child: Row(
-        children: [
-          const Text(
-            'Order Hub',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFF131517),
-              letterSpacing: -0.5,
+      child: isWide
+          ? Row(
+              children: [
+                const Text(
+                  'Order Hub',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF131517),
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const Spacer(),
+                _buildFilterTabs(true),
+                const SizedBox(width: 24),
+                _buildIconButton(Icons.search_rounded),
+                const SizedBox(width: 12),
+                _buildIconButton(Icons.tune_rounded),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Order Hub',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF131517),
+                          letterSpacing: -0.5,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildIconButton(Icons.search_rounded),
+                        const SizedBox(width: 8),
+                        _buildIconButton(Icons.tune_rounded),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildFilterTabs(false),
+              ],
             ),
-          ),
-          const Spacer(),
-          if (isWide) _buildFilterTabs(true) else _buildFilterTabs(false),
-          if (isWide) ...[
-            const SizedBox(width: 24),
-            _buildIconButton(Icons.search_rounded),
-            const SizedBox(width: 12),
-            _buildIconButton(Icons.tune_rounded),
-          ],
-        ],
-      ),
     );
   }
 
@@ -113,44 +147,48 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         color: const Color(0xFFF8F9FA),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: _filters.map((filter) {
-          final isSelected = _selectedFilter == filter;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedFilter = filter),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              padding: EdgeInsets.symmetric(
-                horizontal: isWide ? 24 : 12,
-                vertical: 10,
-              ),
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.white : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        )
-                      ]
-                    : [],
-              ),
-              child: Text(
-                filter,
-                style: TextStyle(
-                  color: isSelected
-                      ? const Color(0xFFC9A227)
-                      : const Color(0xFF8E847C),
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                  fontSize: 13,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: _filters.map((filter) {
+            final isSelected = _selectedFilter == filter;
+            return GestureDetector(
+              onTap: () => setState(() => _selectedFilter = filter),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isWide ? 24 : 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          )
+                        ]
+                      : [],
+                ),
+                child: Text(
+                  filter,
+                  style: TextStyle(
+                    color: isSelected
+                        ? const Color(0xFFC9A227)
+                        : const Color(0xFF8E847C),
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    fontSize: 13,
+                  ),
                 ),
               ),
-            ),
-          );
-        }).toList(),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
@@ -208,10 +246,11 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
             order.status != OrderStatus.delivered &&
             order.status != OrderStatus.cancelled)
         .length;
-    final deliveredCount =
-        _apiOrders.where((order) => order.status == OrderStatus.delivered).length;
-    final totalSpent = _apiOrders.fold<double>(
-        0.0, (sum, order) => sum + order.totalAmount);
+    final deliveredCount = _apiOrders
+        .where((order) => order.status == OrderStatus.delivered)
+        .length;
+    final totalSpent =
+        _apiOrders.fold<double>(0.0, (sum, order) => sum + order.totalAmount);
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -238,9 +277,11 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          _buildStatRow('Active Orders', activeCount.toString(), const Color(0xFFC9A227)),
+          _buildStatRow(
+              'Active Orders', activeCount.toString(), const Color(0xFFC9A227)),
           _buildStatRow('Delivered', deliveredCount.toString(), Colors.green),
-          _buildStatRow('Total Spent', DummyData.formatPrice(totalSpent), Colors.white70),
+          _buildStatRow(
+              'Total Spent', DummyData.formatPrice(totalSpent), Colors.white70),
           const Divider(color: Colors.white10, height: 32),
           const Text(
             'Your items usually arrive in 8-10 days after measurement.',
@@ -325,10 +366,35 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     if (_errorMessage != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 40),
-          child: Text(
-            _errorMessage!,
-            style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+          padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline_rounded,
+                  color: Colors.redAccent, size: 48),
+              const SizedBox(height: 20),
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF131517),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _loadOrders,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Try Again'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFC9A227),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -392,16 +458,16 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(isWide ? 20 : 12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: Image.network(
-                      firstItem.product.image,
-                      width: isWide ? 100 : 80,
-                      height: isWide ? 130 : 100,
+                    child: AppNetworkImage(
+                      imageUrl: firstItem.product.image,
+                      width: isWide ? 100 : 60,
+                      height: isWide ? 130 : 80,
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -413,20 +479,25 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              firstItem.product.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 18,
-                                color: Color(0xFF131517),
+                            Expanded(
+                              child: Text(
+                                firstItem.product.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 16,
+                                  color: Color(0xFF131517),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            const SizedBox(width: 4),
                             Text(
                               DummyData.formatPrice(order.totalAmount),
                               style: const TextStyle(
                                 fontWeight: FontWeight.w900,
                                 color: Color(0xFFC9A227),
-                                fontSize: 18,
+                                fontSize: 16,
                               ),
                             ),
                           ],
@@ -436,28 +507,45 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                           'Order #${order.orderNumber} • ${_formatDate(order.orderDate)}',
                           style: TextStyle(
                               color: Colors.grey[500],
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 16),
                         Row(
                           children: [
-                            _buildStatusBadge(order.status),
+                            Flexible(child: _buildStatusBadge(order.status)),
                             const Spacer(),
                             if (isActive)
                               TextButton(
                                 onPressed: () {},
+                                style: TextButton.styleFrom(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 4),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
                                 child: const Text('Track Live',
                                     style: TextStyle(
                                         fontWeight: FontWeight.w800,
+                                        fontSize: 11,
                                         color: Color(0xFFC9A227))),
                               )
                             else
                               TextButton(
                                 onPressed: () {},
+                                style: TextButton.styleFrom(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 4),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
                                 child: const Text('Reorder',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w800)),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 11,
+                                    )),
                               ),
                           ],
                         ),
@@ -469,7 +557,8 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
             ),
             if (isActive)
               Container(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                padding: EdgeInsets.fromLTRB(
+                    isWide ? 20 : 12, 0, isWide ? 20 : 12, 20),
                 child: _buildProgressStepper(order.status),
               ),
           ],
@@ -665,7 +754,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
             Text(
               "No $_selectedFilter orders yet",
               style: const TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF8E847C)),
             ),
@@ -677,12 +766,12 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                 backgroundColor: const Color(0xFFC9A227),
                 foregroundColor: Colors.white,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
               child: const Text('Start Crafting Your Style',
-                  style: TextStyle(fontWeight: FontWeight.w700)),
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
             ),
           ],
         ),

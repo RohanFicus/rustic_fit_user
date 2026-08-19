@@ -7,12 +7,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:rustic_fit/screens/address_selection_screen.dart';
 
 import '../models/dummy_data.dart';
+import '../widgets/app_network_image.dart';
 
 class FittingDetailsScreen extends StatefulWidget {
   final Product product;
   final Map<String, dynamic>? selectedSize;
 
-  const FittingDetailsScreen({super.key, required this.product, this.selectedSize});
+  const FittingDetailsScreen(
+      {super.key, required this.product, this.selectedSize});
 
   @override
   State<FittingDetailsScreen> createState() => _FittingDetailsScreenState();
@@ -544,7 +546,8 @@ class _FittingDetailsScreenState extends State<FittingDetailsScreen> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(24),
                         child: kIsWeb
-                            ? Image.network(_referenceImage!.path,
+                            ? AppNetworkImage(
+                                imageUrl: _referenceImage!.path,
                                 width: double.infinity,
                                 height: 160,
                                 fit: BoxFit.cover)

@@ -207,11 +207,13 @@ class _OtpScreenState extends State<OtpScreen> {
             if (profileResponse.statusCode == 200 ||
                 profileResponse.statusCode == 201) {
               final profileData = jsonDecode(profileResponse.body);
-              if (profileData['status'] == true && profileData['data'] != null) {
+              if (profileData['status'] == true &&
+                  profileData['data'] != null) {
                 final rawData = profileData['data'];
-                final customer = (rawData is Map && rawData.containsKey('customer'))
-                    ? rawData['customer']
-                    : rawData;
+                final customer =
+                    (rawData is Map && rawData.containsKey('customer'))
+                        ? rawData['customer']
+                        : rawData;
 
                 if (customer != null &&
                     customer['firstName'] != null &&
@@ -334,85 +336,90 @@ class _OtpScreenState extends State<OtpScreen> {
     final size = MediaQuery.of(context).size;
     final isWide = size.width > 900;
 
-    return Scaffold(
-      backgroundColor: darkBrown,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Background Image with dark overlay
-          Image.asset(
-            'assets/images/banners/banner_1.png',
-            fit: BoxFit.cover,
-          ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.7),
-                  Colors.black.withValues(alpha: 0.8),
-                  darkBrown,
-                ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: darkBrown,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Background Image with dark overlay
+            Image.asset(
+              'assets/images/banners/banner_1.png',
+              fit: BoxFit.cover,
+            ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.7),
+                    Colors.black.withValues(alpha: 0.8),
+                    darkBrown,
+                  ],
+                ),
               ),
             ),
-          ),
 
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: isWide ? 1000 : 450,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(32),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(32),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          width: 1,
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: isWide ? 1000 : 450,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(32),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(32),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            width: 1,
+                          ),
                         ),
+                        child: isWide
+                            ? Row(
+                                children: [
+                                  Expanded(child: _buildDecorativeSide()),
+                                  Expanded(child: _buildFormSide()),
+                                ],
+                              )
+                            : Column(
+                                children: [
+                                  _buildDecorativeSide(height: 220),
+                                  _buildFormSide(),
+                                ],
+                              ),
                       ),
-                      child: isWide
-                          ? Row(
-                              children: [
-                                Expanded(child: _buildDecorativeSide()),
-                                Expanded(child: _buildFormSide()),
-                              ],
-                            )
-                          : Column(
-                              children: [
-                                _buildDecorativeSide(height: 250),
-                                _buildFormSide(),
-                              ],
-                            ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildDecorativeSide({double? height}) {
+    final isMobile = height != null;
     return Container(
       height: height ?? 650,
-      padding: const EdgeInsets.all(48),
+      padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 24 : 48, vertical: isMobile ? 20 : 48),
       decoration: BoxDecoration(
         color: primaryGold.withValues(alpha: 0.1),
         border: Border(
-          right: height == null
+          right: !isMobile
               ? BorderSide(color: Colors.white.withValues(alpha: 0.1))
               : BorderSide.none,
-          bottom: height != null
+          bottom: isMobile
               ? BorderSide(color: Colors.white.withValues(alpha: 0.1))
               : BorderSide.none,
         ),
@@ -421,7 +428,7 @@ class _OtpScreenState extends State<OtpScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(isMobile ? 12 : 20),
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.3),
               shape: BoxShape.circle,
@@ -429,21 +436,22 @@ class _OtpScreenState extends State<OtpScreen> {
             ),
             child: Icon(
               Icons.shield_outlined,
-              size: height != null ? 60 : 120,
+              size: isMobile ? 40 : 120,
               color: primaryGold,
             ),
           ),
-          const SizedBox(height: 32),
-          const Text(
+          SizedBox(height: isMobile ? 16 : 32),
+          Text(
             'SECURE YOUR ACCOUNT',
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white,
-              fontSize: 20,
+              fontSize: isMobile ? 18 : 20,
               fontWeight: FontWeight.w900,
-              letterSpacing: 4,
+              letterSpacing: isMobile ? 2 : 4,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: isMobile ? 4 : 12),
           Text(
             'We have sent a 6-digit verification code to your WhatsApp.',
             textAlign: TextAlign.center,
@@ -451,10 +459,10 @@ class _OtpScreenState extends State<OtpScreen> {
               color: primaryGold.withValues(alpha: 0.7),
               fontSize: 10,
               fontWeight: FontWeight.w800,
-              letterSpacing: 2,
+              letterSpacing: 1,
             ),
           ),
-          if (height == null) ...[
+          if (!isMobile) ...[
             const Spacer(),
             Text(
               'Your safety and data privacy is our priority.',
@@ -472,8 +480,11 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   Widget _buildFormSide() {
+    final size = MediaQuery.of(context).size;
+    final isWide = size.width > 900;
+
     return Padding(
-      padding: const EdgeInsets.all(40),
+      padding: EdgeInsets.all(isWide ? 40 : 24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
